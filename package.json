@@ -1,0 +1,49 @@
+{
+  "name": "my-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:next": "next dev",
+    "dev:api": "nodemon src/api/server.js",
+    "dev": "concurrently \"npm run dev:next\" \"npm run dev:api\"",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.2.8",
+    "@tanstack/react-query": "^5.101.2",
+    "@x402/core": "^2.25.0",
+    "@x402/evm": "^2.25.0",
+    "@x402/svm": "^2.25.0",
+    "axios": "^1.20.0",
+    "bcrypt": "^6.0.0",
+    "concurrently": "^10.0.5",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "ethers": "^6.17.0",
+    "express": "^5.2.1",
+    "form-data": "^4.0.6",
+    "http-errors": "^2.0.1",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.25.0",
+    "mongoose": "^9.3.2",
+    "multer": "^2.2.0",
+    "next": "16.3.4",
+    "nodemon": "^3.1.14",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hot-toast": "^2.6.0",
+    "viem": "^2.38.0",
+    "wagmi": "^2.19.3"
+  },
+  "devDependencies": {
+    "@base-org/account": "2.3.0",
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4"
+  },
+  "packageManager": "pnpm@10.6.5"
+}
