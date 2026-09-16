@@ -69,14 +69,13 @@ const RequestComponent = ({
       return { uris: [], hashes: [], matched: "missing-metadata", part };
     }
 
-    // ✅ Repeat the same URI/hash for the requested quantity
+    // Repeat the same URI/hash for the requested quantity
     const uris = Array(request.quantity).fill(part.tokenURI);
     const hashes = Array(request.quantity).fill(part.metadataHash);
 
     return { uris, hashes, matched, part };
   };
 
-  // ========== AUTO-FULFILL ==========
   const handleAutoFulfill = async (request) => {
     if (!onFulfillSupply) return;
 
@@ -207,22 +206,22 @@ const RequestComponent = ({
                       <div className="mt-3 flex items-center gap-2">
                         {matched === "exact" && (
                           <span className="rounded-full bg-green-900/40 border border-green-700/50 px-2 py-0.5 text-xs text-green-400">
-                            ✅ Matched part: {part?.partName}
+                             Matched part: {part?.partName}
                           </span>
                         )}
                         {matched === "fallback" && (
                           <span className="rounded-full bg-yellow-900/40 border border-yellow-700/50 px-2 py-0.5 text-xs text-yellow-400">
-                            ⚠️ No exact match — using: {part?.partName}
+                             No exact match — using: {part?.partName}
                           </span>
                         )}
                         {matched === "missing-metadata" && (
                           <span className="rounded-full bg-red-900/40 border border-red-700/50 px-2 py-0.5 text-xs text-red-400">
-                            ❌ Part missing tokenURI or metadataHash
+                             Part missing tokenURI or metadataHash
                           </span>
                         )}
                         {matched === "insufficient" && (
                           <span className="rounded-full bg-red-900/40 border border-red-700/50 px-2 py-0.5 text-xs text-red-400">
-                            ❌ No parts available
+                             No parts available
                           </span>
                         )}
                       </div>

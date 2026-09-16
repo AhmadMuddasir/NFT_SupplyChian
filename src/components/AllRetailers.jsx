@@ -2,6 +2,8 @@
 
 import { useContract } from "@/context/contractContext";
 import { useEffect, useState } from "react";
+import { RefreshCcw } from "lucide-react";
+import toast from "react-hot-toast";
 
 const AllRetailers = () => {
   const { getAllRetailers, contract, getRetailerRequests } = useContract();
@@ -62,7 +64,7 @@ const AllRetailers = () => {
             onClick={fetchRetailers}
             className="rounded-md bg-[#8FA88A] px-6 py-3 text-sm font-semibold text-[#1C2620] transition-colors hover:bg-[#7A9776]"
           >
-            🔄 Refresh
+              <RefreshCcw/>
           </button>
         </div>
 
@@ -140,7 +142,7 @@ const AllRetailers = () => {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(retailer.address);
-                    alert("Address copied!");
+                    toast.success("Address copied!");
                   }}
                   className="shrink-0 rounded-md border border-[#4A5D48] px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:border-[#8FA88A] hover:text-[#8FA88A]"
                 >

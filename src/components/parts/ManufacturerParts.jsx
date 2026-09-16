@@ -2,6 +2,8 @@
 
 import React from "react";
 import MintPartButton from "@/components/parts/MintPartButton";
+import { useRouter } from "next/navigation";
+
 
 const ManufacturerParts = ({
   loadingParts = false,
@@ -9,6 +11,9 @@ const ManufacturerParts = ({
   onOpenModal,
   onSuccess,
 }) => {
+
+    const router = useRouter();
+
   return (
     <div className="mt-6 w-full px-2 sm:px-4">
       {loadingParts ? (
@@ -33,6 +38,7 @@ const ManufacturerParts = ({
           {parts.map((part) => (
             <div
               key={part._id}
+               onClick={() => router.push(`/manufacturer/${part._id}`)}
               className="flex flex-col justify-between rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden hover:border-[#8FA88A]/50 transition-colors"
             >
               {/* Image Container: Full visibility with object-contain */}
@@ -69,7 +75,7 @@ const ManufacturerParts = ({
                   </p>
                 </div>
 
-                <div className="mt-4 pt-2">
+                <div className="mt-4 pt-2" onClick={(e) => e.stopPropagation()}>
                   <MintPartButton
                     partId={part._id}
                     tokenId={part.tokenId}
@@ -78,6 +84,9 @@ const ManufacturerParts = ({
                     onSuccess={onSuccess}
                   />
                 </div>
+                <p className="mt-3 text-xs text-[#8FA88A] text-center">
+                  Click card to view details →
+                </p>
               </div>
             </div>
           ))}

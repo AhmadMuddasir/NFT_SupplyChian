@@ -42,7 +42,7 @@ const MintPartButton = ({ partId, tokenId, tokenURI, metadataHash, onSuccess }) 
       // 2️⃣ PATCH tokenId to database
       await autopartApi.update(partId, { tokenId: newTokenId });
 
-      toast.success(`✅ Minted! Token #${newTokenId}`, { id: toastId });
+      toast.success(` Minted! Token #${newTokenId}`, { id: toastId });
       setRetailerAddress("");
       setShowInput(false);
       onSuccess?.();

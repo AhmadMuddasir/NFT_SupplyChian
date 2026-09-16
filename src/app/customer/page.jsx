@@ -30,7 +30,6 @@ const Page = () => {
   const [verifyingMetadata, setVerifyingMetadata] = useState(false);
   const [metadataStatus, setMetadataStatus] = useState(null);
 
-  // ========== HANDLE SEARCH ==========
   const handleVerify = async (e) => {
     e?.preventDefault();
 
@@ -44,7 +43,6 @@ const Page = () => {
     setMetadataStatus(null);
 
     try {
-      // 1. Fetch off-chain metadata from MongoDB
       const [dbResult, chainData] = await Promise.all([
         autopartApi.getByTokenId(tokenId).catch(() => null),
         Promise.all([
@@ -84,7 +82,6 @@ const Page = () => {
     }
   };
 
-  // ========== VERIFY IPFS METADATA INTEGRITY ==========
   const handleVerifyMetadata = async () => {
     if (!result?.dbPart?.tokenURI || !result?.metadataHash) {
       toast.error("Missing token URI or metadata hash");
@@ -95,7 +92,6 @@ const Page = () => {
     setMetadataStatus(null);
 
     try {
-      // 1. Fetch JSON from IPFS
       const gatewayUrl = result.dbPart.tokenURI.replace(
         "ipfs://",
         "https://gateway.pinata.cloud/ipfs/"
@@ -105,12 +101,10 @@ const Page = () => {
 
       const metadataText = await response.text();
 
-      // 2. Hash it
       const computedHash = ethers.keccak256(
         ethers.toUtf8Bytes(metadataText)
       );
 
-      // 3. Compare with on-chain hash
       const matches = computedHash === result.metadataHash;
 
       setMetadataStatus({
@@ -120,9 +114,9 @@ const Page = () => {
       });
 
       if (matches) {
-        toast.success("✅ Metadata is authentic and untampered!");
+        toast.success(" Metadata is authentic and untampered!");
       } else {
-        toast.error("❌ Metadata has been tampered with!");
+        toast.error(" Metadata has been tampered with!");
       }
     } catch (error) {
       console.error("Metadata verification error:", error);
@@ -132,7 +126,6 @@ const Page = () => {
     }
   };
 
-  // ========== STATUS BADGE STYLES ==========
   const getSaleStatusStyle = (status) => {
     switch (status) {
       case "UNSOLD":
@@ -151,7 +144,6 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-[#1C2620] px-6 py-16 sm:px-8">
       <div className="mx-auto max-w-3xl">
-        {/* ========== HERO ========== */}
         <div className="text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#4A5D48] bg-[#8FA88A]/10 px-4 py-1.5 text-sm font-medium text-[#8FA88A]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#8FA88A]" />
@@ -166,7 +158,6 @@ const Page = () => {
           </p>
         </div>
 
-        {/* ========== SEARCH FORM ========== */}
         <form
           onSubmit={handleVerify}
           className="mt-8 flex flex-col sm:flex-row gap-3"
@@ -183,11 +174,10 @@ const Page = () => {
             disabled={loading}
             className="rounded-md bg-[#8FA88A] px-8 py-3 text-sm font-semibold text-[#1C2620] transition-colors hover:bg-[#7A9776] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Verifying..." : "Verify Part"}
+            {loading ? "Verifying..." : "Verify & get Part"}
           </button>
         </form>
 
-        {/* ========== LOADING ========== */}
         {loading && (
           <div className="mt-10 text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#8FA88A] border-t-transparent" />
@@ -195,7 +185,6 @@ const Page = () => {
           </div>
         )}
 
-        {/* ========== RESULT ========== */}
         {result && !loading && (
           <div className="mt-10 space-y-4">
             {/* Authenticity Banner */}

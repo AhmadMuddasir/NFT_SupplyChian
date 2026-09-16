@@ -5,6 +5,8 @@ import { useAccount } from "wagmi";
 import { useContract } from "@/context/contractContext";
 import { autopartApi } from "@/lib/api/autopartApi";
 import toast from "react-hot-toast";
+import { RefreshCcwDotIcon } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 
 const STATUS_NAMES = [
   "NEW",
@@ -149,7 +151,7 @@ const RetailerParts = () => {
           onClick={fetchMyParts}
           className="self-start rounded-md border border-[#4A5D48] px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-[#4A5D48]/20 hover:text-white"
         >
-          🔄 Refresh
+          <RefreshCcw/>
         </button>
       </div>
 

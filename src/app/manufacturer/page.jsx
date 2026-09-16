@@ -16,6 +16,7 @@ import ManufacturerParts from "@/components/parts/ManufacturerParts";
 
 const Page = () => {
   const { address, isConnected } = useAccount();
+  
 
   const {
     joinAsManufacturer,
@@ -307,13 +308,13 @@ const Page = () => {
         )}
 
         {activeTab === "parts" && (
-          <ManufacturerParts
-            loadingParts={loadingParts}
-            parts={parts}
-            onOpenModal={() => setIsModalOpen(true)}
-            onSuccess={fetchParts}
-          />
-        )}
+            <ManufacturerParts
+              loadingParts={loadingParts}
+              parts={parts}
+              onOpenModal={() => setIsModalOpen(true)}
+              onSuccess={fetchParts}
+            />
+          )}
 
         {activeTab === "minted" && (
           <div className="mt-6">

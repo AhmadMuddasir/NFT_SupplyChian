@@ -254,7 +254,7 @@ const Page = () => {
           <button
             onClick={() => setActiveTab("Myparts")}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === "orderparts"
+              activeTab === "Myparts"
                 ? "text-[#8FA88A] border-b-2 border-[#8FA88A]"
                 : "text-white/60 hover:text-white"
             }`}
