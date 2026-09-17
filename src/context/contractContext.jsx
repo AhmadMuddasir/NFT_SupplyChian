@@ -135,6 +135,13 @@ export const ContractProvider = ({ children }) => {
     const tnx = await contract.recallPart(tokenId);
     return await tnx.wait();
   };
+  const cancelSupplyRequest = async (requestId) => {
+    if (!contract) throw new Error("Contract not initaialize");
+    console.log("upto here")
+    const tnx = await contract.cancelSupplyRequest(requestId);
+    return await tnx.wait();
+  };
+
   const transferToRetailer = async (to, tokenId) => {
     if (!contract) throw new Error("Contract not initaialize");
     const tnx = await contract.transferToRetailer(to, tokenId);
@@ -359,6 +366,7 @@ export const ContractProvider = ({ children }) => {
     batchMintToRetailer,
     getSupplyRequest,
     getAllSupplyRequests,
+    cancelSupplyRequest,
   };
 
   return (

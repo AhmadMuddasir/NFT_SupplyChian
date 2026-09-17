@@ -204,6 +204,7 @@ contract AutoPartNFT_Pro is ERC721URIStorage, AccessControlEnumerable, ERC2981 {
         }
         return (_addresses, _name, _location);
     }
+
     function requestForRetailer(
         string memory _name,
         string memory _location
@@ -227,7 +228,7 @@ contract AutoPartNFT_Pro is ERC721URIStorage, AccessControlEnumerable, ERC2981 {
             retailerDetails[_retailer].isApprove == false,
             "retailer already added"
         );
-    
+
         _grantRole(RETAILER_ROLE, _retailer);
         retailerDetails[_retailer] = RetailerDetails({
             name: _name,
@@ -243,7 +244,6 @@ contract AutoPartNFT_Pro is ERC721URIStorage, AccessControlEnumerable, ERC2981 {
             retailerDetails[retailer].isApprove == false,
             "retailer already added"
         );
-
 
         _grantRole(RETAILER_ROLE, retailer);
         string memory _name = retailerDetails[retailer].name;
@@ -313,6 +313,21 @@ contract AutoPartNFT_Pro is ERC721URIStorage, AccessControlEnumerable, ERC2981 {
         req.fulfilled = true;
         emit SupplyRequestFulfilled(requestId, tokenIds);
         return tokenIds;
+    }
+
+    function cancelSupplyRequest(uint256 requestId) external {
+        SupplyRequest storage req = supplyRequests[requestId];
+
+        if (req.requester == address(0)) revert RequestDoesNotExist();
+        if (
+            req.requester != msg.sender &&
+            !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)
+        ) {
+            revert NotOwner();
+        }
+        if (req.fulfilled) revert RequestAlreadyFulfilled();
+
+        delete supplyRequests[requestId];
     }
 
     function _mintToRetailer(
@@ -598,7 +613,6 @@ contract AutoPartNFT_Pro is ERC721URIStorage, AccessControlEnumerable, ERC2981 {
             p.mintedAt
         );
     }
-
 
     function supportsInterface(
         bytes4 interfaceId

@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useContract } from "@/context/contractContext";
 import { autopartApi } from "@/lib/api/autopartApi";
 import toast from "react-hot-toast";
-import { CoinsIcon } from "lucide-react";
+import { Edit } from "lucide-react";
+import { Trash } from "lucide-react";
 
 const STATUS_NAMES = [
   "NEW",
@@ -17,6 +18,16 @@ const STATUS_NAMES = [
 
 const SALE_STATUS_NAMES = ["UNSOLD", "IN_TRANSIT", "SOLD", "RETURNED"];
 
+const CATEGORIES = [
+  "engine",
+  "brake",
+  "suspension",
+  "electrical",
+  "body",
+  "interior",
+  "other",
+];
+
 const Page = () => {
   const { id } = useParams();
   const router = useRouter();
@@ -26,44 +37,117 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [chainData, setChainData] = useState(null);
 
-  // ========== FETCH PART FROM DB + CHAIN ==========
-  useEffect(() => {
-    const fetchPart = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
+  // edit 
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
-        // 1. Fetch part from MongoDB
-        const result = await autopartApi.getById(id);
-        const dbPart = result.data?.autoPart;
-        setPart(dbPart);
+  // delete
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-        // 2. If minted, fetch on-chain data
-        if (
-          dbPart?.tokenId !== undefined &&
-          dbPart?.tokenId !== null &&
-          contract
-        ) {
-          const [saleStatus, custodian] = await Promise.all([
-            getSaleStatus(dbPart.tokenId),
-            getNFTCustodian(dbPart.tokenId),
-          ]);
+  // 
+  const fetchPart = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const result = await autopartApi.getById(id);
+      const dbPart = result.data?.autoPart;
+      setPart(dbPart);
 
-          setChainData({
-            saleStatus: SALE_STATUS_NAMES[Number(saleStatus)],
-            custodian,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to load part:", error);
-        toast.error("Failed to load part details");
-      } finally {
-        setLoading(false);
+      if (
+        dbPart?.tokenId !== undefined &&
+        dbPart?.tokenId !== null &&
+        contract
+      ) {
+        const [saleStatus, custodian] = await Promise.all([
+          getSaleStatus(dbPart.tokenId),
+          getNFTCustodian(dbPart.tokenId),
+        ]);
+        setChainData({
+          saleStatus: SALE_STATUS_NAMES[Number(saleStatus)],
+          custodian,
+        });
       }
-    };
+    } catch (error) {
+      console.error("Failed to load part:", error);
+      toast.error("Failed to load part details");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPart();
   }, [id, contract]);
+
+  // ========== OPEN EDIT ==========
+  const openEdit = () => {
+    setEditForm({
+      partName: part.partName || "",
+      brandName: part.brandName || "",
+      description: part.description || "",
+      category: part.category || "other",
+      price: part.price ?? 0,
+      quantity: part.quantity ?? 0,
+    });
+    setIsEditOpen(true);
+  };
+
+  // ========== SAVE EDIT ==========
+  const handleSaveEdit = async () => {
+    if (!editForm.partName.trim() || !editForm.brandName.trim()) {
+      toast.error("Part name and brand are required");
+      return;
+    }
+
+    setSavingEdit(true);
+    const toastId = toast.loading("Saving changes...");
+
+    try {
+      await autopartApi.update(id, {
+        partName: editForm.partName.trim(),
+        brandName: editForm.brandName.trim(),
+        description: editForm.description,
+        category: editForm.category,
+        price: Number(editForm.price),
+        quantity: Number(editForm.quantity),
+      });
+
+      toast.success(" Part updated", { id: toastId });
+      setIsEditOpen(false);
+      await fetchPart();
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to update part",
+        { id: toastId }
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // ========== CONFIRM DELETE ==========
+  const handleDelete = async () => {
+    setDeleting(true);
+    const toastId = toast.loading("Deleting part...");
+
+    try {
+      await autopartApi.delete(id);
+      toast.success(" Part deleted", { id: toastId });
+      setIsDeleteOpen(false);
+      router.push("/manufacturer");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to delete part",
+        { id: toastId }
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // ========== LOADING ==========
   if (loading) {
@@ -124,20 +208,36 @@ const Page = () => {
             <p className="mt-1 text-sm text-white/60">{part.brandName}</p>
           </div>
 
-          {isMinted ? (
-            <span className="self-start rounded-full bg-green-900/50 border border-green-700/50 px-4 py-2 text-sm font-medium text-green-400">
-              <CoinsIcon/> Token #{part.tokenId}
-            </span>
-          ) : (
-            <span className="self-start rounded-full bg-yellow-900/50 border border-yellow-700/50 px-4 py-2 text-sm font-medium text-yellow-400">
-               Not Minted Yet
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-3 self-start">
+            {isMinted ? (
+              <span className="rounded-full bg-green-900/50 border border-green-700/50 px-4 py-2 text-sm font-medium text-green-400">
+                 Token #{part.tokenId}
+              </span>
+            ) : (
+              <span className="rounded-full bg-yellow-900/50 border border-yellow-700/50 px-4 py-2 text-sm font-medium text-yellow-400">
+                 Not Minted
+              </span>
+            )}
+
+            {/* ========== EDIT + DELETE BUTTONS ========== */}
+            <button
+              onClick={openEdit}
+              className="rounded-md border border-[#4A5D48] px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-[#4A5D48]/20 hover:text-white"
+            >
+              <Edit/> Edit
+            </button>
+            <button
+              onClick={() => setIsDeleteOpen(true)}
+              className="rounded-md border border-red-700/50 bg-red-900/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/40"
+            >
+              <Trash/> Delete
+            </button>
+          </div>
         </div>
 
-        {/* ========== MAIN CONTENT GRID ========== */}
+        {/* ========== MAIN CONTENT ========== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* ========== LEFT COLUMN: IMAGE ========== */}
+          {/* LEFT COLUMN */}
           <div className="space-y-6">
             <div className="rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden">
               <img
@@ -147,7 +247,6 @@ const Page = () => {
               />
             </div>
 
-            {/* Price + Quantity Card */}
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
                 <p className="text-xs text-white/50">Price</p>
@@ -164,13 +263,12 @@ const Page = () => {
             </div>
           </div>
 
-          {/* ========== RIGHT COLUMN: DETAILS ========== */}
+          {/* RIGHT COLUMN */}
           <div className="space-y-6">
-            {/* Description */}
             {part.description && (
               <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
                 <h3 className="text-sm font-semibold text-white/80 mb-2">
-                  📝 Description
+                   Description
                 </h3>
                 <p className="text-sm text-white/60 leading-relaxed">
                   {part.description}
@@ -178,10 +276,9 @@ const Page = () => {
               </div>
             )}
 
-            {/* Part Info */}
             <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-4">
-                📦 Part Information
+                 Part Information
               </h3>
               <div className="space-y-3">
                 <Row label="Category" value={part.category} capitalize />
@@ -197,24 +294,15 @@ const Page = () => {
               </div>
             </div>
 
-            {/* On-Chain Status */}
             <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-4">
                 🔗 On-Chain Status
               </h3>
               <div className="space-y-3">
-                <Row
-                  label="Minted"
-                  value={isMinted ? " Yes" : " Not yet"}
-                />
-                {isMinted && (
-                  <Row label="Token ID" value={`#${part.tokenId}`} />
-                )}
+                <Row label="Minted" value={isMinted ? "✅ Yes" : "⏳ Not yet"} />
+                {isMinted && <Row label="Token ID" value={`#${part.tokenId}`} />}
                 {chainData?.saleStatus && (
-                  <Row
-                    label="Sale Status"
-                    value={chainData.saleStatus}
-                  />
+                  <Row label="Sale Status" value={chainData.saleStatus} />
                 )}
                 {chainData?.custodian && (
                   <Row
@@ -226,7 +314,6 @@ const Page = () => {
               </div>
             </div>
 
-            {/* IPFS Metadata */}
             <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-4">
                 🌐 IPFS Metadata
@@ -255,7 +342,6 @@ const Page = () => {
                 )}
               </div>
 
-              {/* View on IPFS button */}
               {part.tokenURI && (
                 <a
                   href={part.tokenURI.replace(
@@ -271,7 +357,6 @@ const Page = () => {
               )}
             </div>
 
-            {/* Etherscan Link */}
             {isMinted && (
               <div className="text-center">
                 <a
@@ -287,11 +372,160 @@ const Page = () => {
           </div>
         </div>
       </div>
+
+      {/* ========== EDIT MODAL ========== */}
+      {isEditOpen && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-[#4A5D48] bg-[#1C2620] p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-white">Edit Part</h3>
+              <button
+                onClick={() => setIsEditOpen(false)}
+                disabled={savingEdit}
+                className="text-white/60 hover:text-white disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <Field label="Part Name *">
+                <input
+                  type="text"
+                  value={editForm.partName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, partName: e.target.value })
+                  }
+                  className="w-full rounded-md border border-[#4A5D48] bg-[#243329] px-4 py-2 text-sm text-white focus:border-[#8FA88A] focus:outline-none"
+                />
+              </Field>
+
+              <Field label="Brand Name *">
+                <input
+                  type="text"
+                  value={editForm.brandName}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, brandName: e.target.value })
+                  }
+                  className="w-full rounded-md border border-[#4A5D48] bg-[#243329] px-4 py-2 text-sm text-white focus:border-[#8FA88A] focus:outline-none"
+                />
+              </Field>
+
+              <Field label="Description">
+                <textarea
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                  className="w-full resize-none rounded-md border border-[#4A5D48] bg-[#243329] px-4 py-2 text-sm text-white focus:border-[#8FA88A] focus:outline-none"
+                />
+              </Field>
+
+              <Field label="Category">
+                <select
+                  value={editForm.category}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, category: e.target.value })
+                  }
+                  className="w-full rounded-md border border-[#4A5D48] bg-[#243329] px-4 py-2 text-sm text-white focus:border-[#8FA88A] focus:outline-none"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Price (USD)">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editForm.price}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, price: e.target.value })
+                    }
+                    className="w-full rounded-md border border-[#4A5D48] bg-[#243329] px-4 py-2 text-sm text-white focus:border-[#8FA88A] focus:outline-none"
+                  />
+                </Field>
+                <Field label="Quantity">
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.quantity}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, quantity: e.target.value })
+                    }
+                    className="w-full rounded-md border border-[#4A5D48] bg-[#243329] px-4 py-2 text-sm text-white focus:border-[#8FA88A] focus:outline-none"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="flex-1 rounded-md bg-[#8FA88A] px-4 py-2.5 text-sm font-semibold text-[#1C2620] transition-colors hover:bg-[#7A9776] disabled:opacity-50"
+              >
+                {savingEdit ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                onClick={() => setIsEditOpen(false)}
+                disabled={savingEdit}
+                className="rounded-md border border-[#4A5D48] px-4 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:bg-[#4A5D48]/20 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== DELETE MODAL ========== */}
+      {isDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="relative w-full max-w-md rounded-lg border border-red-700/50 bg-[#1C2620] p-6 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-900/30 text-xl">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Delete Part?</h3>
+                <p className="mt-1 text-sm text-white/60">
+                  This will remove <strong className="text-white">{part.partName}</strong>{" "}
+                  from your dashboard. It won't affect any NFTs already minted on-chain.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Yes, Delete"}
+              </button>
+              <button
+                onClick={() => setIsDeleteOpen(false)}
+                disabled={deleting}
+                className="rounded-md border border-[#4A5D48] px-4 py-2.5 text-sm font-semibold text-white/70 transition-colors hover:bg-[#4A5D48]/20 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// ========== Small Helper Row Component ==========
+// ========== HELPERS ==========
 const Row = ({ label, value, mono = false, capitalize = false }) => (
   <div className="flex items-start justify-between gap-4">
     <span className="text-xs text-white/50 shrink-0">{label}</span>
@@ -302,6 +536,15 @@ const Row = ({ label, value, mono = false, capitalize = false }) => (
     >
       {value}
     </span>
+  </div>
+);
+
+const Field = ({ label, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-white/80 mb-1">
+      {label}
+    </label>
+    {children}
   </div>
 );
 

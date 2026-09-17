@@ -136,16 +136,7 @@ const Page = () => {
   ];
 
   const approvedActions = [
-    {
-      title: "Create Supply Request",
-      description: "Ask a manufacturer to supply you with parts.",
-      fields: [
-        { name: "productName", placeholder: "Product name (hashed on-chain)" },
-        { name: "quantity", type: "number", placeholder: "Quantity (1-100)" },
-      ],
-      onSubmit: (v) =>
-        createSupplyRequest(ethers.id(v.productName), Number(v.quantity)),
-    },
+
     {
       title: "Ship Part to Customer",
       description: "Mark a part as shipped and attach customer details.",
@@ -202,7 +193,7 @@ const Page = () => {
                     : "Not Registered"}
             </span>
             <h1 className="mt-4 text-2xl font-bold text-white">
-              Retailer Dashboard
+              Retailer/Wholesaler/Part branch  Dashboard
             </h1>
             <p className="mt-1 text-sm text-white/60">
               Request supply, ship parts, and manage returns.
@@ -283,7 +274,7 @@ const Page = () => {
             {status.isRetailer && (
               <>
                 <div className="rounded-lg border border-[#4A5D48] bg-[#243329] p-4 text-white mb-2">
-                  <p className="text-sm font-semibold">{status.name}</p>
+                  <p className="text-xl font-semibold">{status.name}</p>
                   <p className="text-sm text-white/70">{status.location}</p>
                 </div>
                 {approvedActions.map((action) => (

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { useContract } from "@/context/contractContext";
 import ManufactureCard from "@/components/ManufactureCard";
-import MintPartButton from "@/components/parts/MintPartButton";
 import CreatePartModal from "@/components/modals/CreatePartModals";
 import toast from "react-hot-toast";
 import { autopartApi } from "@/lib/api/autopartApi";
@@ -15,7 +14,9 @@ import MintedPartsComponent from "@/components/MintedPartsComponent";
 import ManufacturerParts from "@/components/parts/ManufacturerParts";
 
 const Page = () => {
+
   const { address, isConnected } = useAccount();
+  console.log("address:",address)
   
 
   const {
@@ -32,6 +33,7 @@ const Page = () => {
     getAllSupplyRequests,
     getRetailerRequests,
     addRetailer,
+    cancelSupplyRequest
   } = useContract();
 
   const [manufacturers, setManufacturers] = useState([]);
@@ -43,6 +45,8 @@ const Page = () => {
   const [supplyRequests, setSupplyRequests] = useState([]);
   const [retailerRequests, setRetailerRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  console.log("my parts",parts)
+  // console.log("my parts created",parts.createdBy.address);
 
   useEffect(() => {
     if (!contract) return;
@@ -64,6 +68,7 @@ const Page = () => {
       setLoadingParts(true);
       const result = await autopartApi.getAll({ limit: 30 });
       const fetchedParts = result.data?.autoParts || [];
+      
       const myParts = fetchedParts.filter(
         (part) =>
           part.createdBy?.address?.toLowerCase() === address?.toLowerCase(),
@@ -307,7 +312,7 @@ const Page = () => {
           />
         )}
 
-        {activeTab === "parts" && (
+        {activeTab === "parts" &&  (
             <ManufacturerParts
               loadingParts={loadingParts}
               parts={parts}

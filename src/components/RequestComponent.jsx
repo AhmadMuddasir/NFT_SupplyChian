@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ethers } from "ethers";
 import toast from "react-hot-toast";
+import { useContract } from "@/context/contractContext";
 
 const RequestComponent = ({
   parts = [],
@@ -12,11 +13,18 @@ const RequestComponent = ({
   onFulfillSupply,
   refreshing = false,
 }) => {
+
+  const {cancelSupplyRequest} = useContract();
+
   const [approvingAddress, setApprovingAddress] = useState(null);
   const [fulfillingId, setFulfillingId] = useState(null);
   const [previewRequestId, setPreviewRequestId] = useState(null);
 
   const pendingSupplyRequests = supplyRequests.filter((r) => !r.fulfilled);
+  
+  const cancelRequest = async(requestId)=>{
+    await cancelSupplyRequest(requestId);
+  }
 
   const handleApprove = async (address) => {
     if (!onApproveRetailer) return;
@@ -26,7 +34,9 @@ const RequestComponent = ({
       toast.success("Retailer approved");
     } catch (error) {
       console.log(error);
-      toast.error(error?.reason || error?.message || "Failed to approve retailer");
+      toast.error(
+        error?.reason || error?.message || "Failed to approve retailer",
+      );
     } finally {
       setApprovingAddress(null);
     }
@@ -91,9 +101,12 @@ const RequestComponent = ({
       return;
     }
 
-    if (uris.length !== request.quantity || hashes.length !== request.quantity) {
+    if (
+      uris.length !== request.quantity ||
+      hashes.length !== request.quantity
+    ) {
       toast.error(
-        `Need ${request.quantity} URI(s) and hash(es), got ${uris.length} and ${hashes.length}`
+        `Need ${request.quantity} URI(s) and hash(es), got ${uris.length} and ${hashes.length}`,
       );
       return;
     }
@@ -102,12 +115,14 @@ const RequestComponent = ({
       setFulfillingId(request.requestId);
       await onFulfillSupply(request.requestId, uris, hashes);
       toast.success(
-        `Request #${request.requestId} fulfilled · Minted ${request.quantity} NFT(s)`
+        `Request #${request.requestId} fulfilled · Minted ${request.quantity} NFT(s)`,
       );
       setPreviewRequestId(null);
     } catch (error) {
       console.log(error);
-      toast.error(error?.reason || error?.message || "Failed to fulfill request");
+      toast.error(
+        error?.reason || error?.message || "Failed to fulfill request",
+      );
     } finally {
       setFulfillingId(null);
     }
@@ -118,7 +133,9 @@ const RequestComponent = ({
       {/* ========== RETAILER REQUESTS ========== */}
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Retailer Requests</h2>
+          <h2 className="text-lg font-semibold text-white">
+            Retailer Requests
+          </h2>
           <span className="rounded-full border border-[#4A5D48] bg-[#8FA88A]/10 px-3 py-0.5 text-xs text-[#8FA88A]">
             {retailerRequests.length} pending
           </span>
@@ -141,7 +158,9 @@ const RequestComponent = ({
               >
                 <p className="text-sm font-semibold text-white">{r.name}</p>
                 <p className="text-sm text-white/70 mt-1">{r.location}</p>
-                <p className="text-xs text-white/40 mt-2 truncate">{r.address}</p>
+                <p className="text-xs text-white/40 mt-2 truncate">
+                  {r.address}
+                </p>
                 <button
                   onClick={() => handleApprove(r.address)}
                   disabled={approvingAddress === r.address}
@@ -177,9 +196,12 @@ const RequestComponent = ({
         ) : (
           <div className="mt-4 space-y-4">
             {pendingSupplyRequests.map((req) => {
-              const { uris, hashes, matched, part } = buildFulfillmentArrays(req);
+              const { uris, hashes, matched, part } =
+                buildFulfillmentArrays(req);
               const canFulfill =
-                part && uris.length === req.quantity && hashes.length === req.quantity;
+                part &&
+                uris.length === req.quantity &&
+                hashes.length === req.quantity;
               const isPreviewOpen = previewRequestId === req.requestId;
 
               return (
@@ -199,37 +221,44 @@ const RequestComponent = ({
                         Product hash: {req.productHash}
                       </p>
                       <p className="text-xs text-white/40">
-                        Requested: {new Date(req.requestTime * 1000).toLocaleString()}
+                        Requested:{" "}
+                        {new Date(req.requestTime * 1000).toLocaleString()}
                       </p>
 
                       {/* Match status */}
                       <div className="mt-3 flex items-center gap-2">
                         {matched === "exact" && (
                           <span className="rounded-full bg-green-900/40 border border-green-700/50 px-2 py-0.5 text-xs text-green-400">
-                             Matched part: {part?.partName}
+                            Matched part: {part?.partName}
                           </span>
                         )}
                         {matched === "fallback" && (
                           <span className="rounded-full bg-yellow-900/40 border border-yellow-700/50 px-2 py-0.5 text-xs text-yellow-400">
-                             No exact match — using: {part?.partName}
+                            No exact match — using: {part?.partName}
                           </span>
                         )}
                         {matched === "missing-metadata" && (
                           <span className="rounded-full bg-red-900/40 border border-red-700/50 px-2 py-0.5 text-xs text-red-400">
-                             Part missing tokenURI or metadataHash
+                            Part missing tokenURI or metadataHash
                           </span>
                         )}
                         {matched === "insufficient" && (
                           <span className="rounded-full bg-red-900/40 border border-red-700/50 px-2 py-0.5 text-xs text-red-400">
-                             No parts available
+                            No parts available
                           </span>
                         )}
                       </div>
                     </div>
 
+                    <button onClick={() => cancelRequest(req.requestId)}  className="rounded-md bg-[#8FA88A] px-4 py-2 text-sm font-semibold text-[#1C2620] transition-colors hover:bg-[#7A9776] disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                        Cancel Request
+                    </button>
+
                     <button
                       onClick={() =>
-                        setPreviewRequestId(isPreviewOpen ? null : req.requestId)
+                        setPreviewRequestId(
+                          isPreviewOpen ? null : req.requestId,
+                        )
                       }
                       disabled={!canFulfill}
                       className="rounded-md bg-[#8FA88A] px-4 py-2 text-sm font-semibold text-[#1C2620] transition-colors hover:bg-[#7A9776] disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
