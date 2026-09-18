@@ -16,7 +16,6 @@ const GetAllParts = ({ allowRequest = false }) => {
   const [quantity, setQuantity] = useState(1);
   const [requesting, setRequesting] = useState(false);
 
-  // ========== FETCH ALL PARTS ==========
   useEffect(() => {
     const fetchParts = async () => {
       try {
@@ -34,7 +33,6 @@ const GetAllParts = ({ allowRequest = false }) => {
     fetchParts();
   }, []);
 
-  // ========== CREATE SUPPLY REQUEST ==========
   const handleRequest = async () => {
     if (!selectedPart) return;
 
@@ -81,7 +79,6 @@ const GetAllParts = ({ allowRequest = false }) => {
     }
   };
 
-  // ========== LOADING ==========
   if (loading) {
     return (
       <div className="text-center py-20">
@@ -91,7 +88,6 @@ const GetAllParts = ({ allowRequest = false }) => {
     );
   }
 
-  // ========== EMPTY ==========
   if (parts.length === 0) {
     return (
       <div className="text-center py-20 rounded-xl border border-dashed border-[#4A5D48] bg-[#243329]/50">
@@ -100,7 +96,6 @@ const GetAllParts = ({ allowRequest = false }) => {
     );
   }
 
-  // ========== PARTS GRID ==========
   return (
     <div className="mt-6">
       {/* Header */}
@@ -171,7 +166,6 @@ const GetAllParts = ({ allowRequest = false }) => {
         ))}
       </div>
 
-      {/* ========== QUANTITY MODAL ========== */}
       {selectedPart && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-lg border border-[#4A5D48] bg-[#1C2620] p-6 shadow-xl">

@@ -78,8 +78,10 @@ export const ContractProvider = ({ children }) => {
   };
 
   const mintToRetailer = async (retailerAddress, tokenURI, metadataHash) => {
-    if (!contract) throw new Error("Contract not initialized");
-
+    try {
+      
+      if (!contract) throw new Error("Contract not initialized");
+      
     const tx = await contract.mintPartToRetailer(
       retailerAddress,
       tokenURI,
@@ -100,8 +102,11 @@ export const ContractProvider = ({ children }) => {
     const tokenId = event ? Number(event.args.tokenId) : null;
 
     console.log(" Minted tokenId:", tokenId);
-
+    
     return { tokenId, receipt };
+  } catch (error) {
+    console.log("mintToRetailer error:",error)
+  }
   };
 
   const removeRetailer = async (retailerAddress) => {

@@ -346,7 +346,7 @@ const Page = () => {
             {trackResult && (
               <div className="mt-4 rounded-lg border border-[#4A5D48] bg-[#243329] p-4 text-white space-y-1">
                 <p className="text-sm font-semibold">
-                  Token #{trackResult.tokenId}
+                  Token Id#{trackResult.tokenId}
                 </p>
                 <p className="text-sm text-white/70">
                   Authentic:{" "}

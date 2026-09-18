@@ -27,7 +27,6 @@ const RetailerParts = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all | UNSOLD | IN_TRANSIT | SOLD | RETURNED
 
-  // ========== FETCH + FILTER ==========
   const fetchMyParts = async () => {
     if (!contract || !address) return;
 
@@ -88,13 +87,11 @@ const RetailerParts = () => {
     }
   }, [isConnected, address, contract]);
 
-  // ========== FILTERED VIEW ==========
   const visible =
     filter === "all"
       ? myParts
       : myParts.filter((p) => p.saleStatus === filter);
 
-  // ========== STATS ==========
   const stats = {
     total: myParts.length,
     unsold: myParts.filter((p) => p.saleStatus === "UNSOLD").length,
@@ -102,7 +99,6 @@ const RetailerParts = () => {
     sold: myParts.filter((p) => p.saleStatus === "SOLD").length,
   };
 
-  // ========== SALE STATUS BADGE ==========
   const getSaleStatusStyle = (status) => {
     switch (status) {
       case "UNSOLD":
@@ -118,7 +114,6 @@ const RetailerParts = () => {
     }
   };
 
-  // ========== NOT CONNECTED ==========
   if (!isConnected) {
     return (
       <div className="text-center py-20">
@@ -127,7 +122,6 @@ const RetailerParts = () => {
     );
   }
 
-  // ========== LOADING ==========
   if (loading) {
     return (
       <div className="text-center py-20">
@@ -139,7 +133,6 @@ const RetailerParts = () => {
 
   return (
     <div className="space-y-6">
-      {/* ========== HEADER + STATS ========== */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">My Inventory</h2>
@@ -177,7 +170,6 @@ const RetailerParts = () => {
         </div>
       </div>
 
-      {/* ========== FILTERS ========== */}
       <div className="flex flex-wrap gap-2">
         {["all", "UNSOLD", "IN_TRANSIT", "SOLD", "RETURNED"].map((f) => (
           <button
@@ -194,7 +186,6 @@ const RetailerParts = () => {
         ))}
       </div>
 
-      {/* ========== PARTS GRID ========== */}
       {visible.length === 0 ? (
         <div className="text-center py-20 rounded-xl border border-dashed border-[#4A5D48] bg-[#243329]/50">
           <p className="text-white/60">
@@ -218,13 +209,12 @@ const RetailerParts = () => {
               />
 
               <div className="p-4">
-                {/* Title + Token ID */}
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="text-base font-semibold text-white line-clamp-1">
                     {part.partName}
                   </h3>
                   <span className="shrink-0 rounded-full bg-[#8FA88A]/10 px-2 py-0.5 text-xs text-[#8FA88A]">
-                    #{part.tokenId}
+                    Token Id: {part.tokenId}
                   </span>
                 </div>
 
@@ -236,7 +226,6 @@ const RetailerParts = () => {
                   </p>
                 )}
 
-                {/* Sale Status + Part Status */}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <span
                     className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getSaleStatusStyle(
@@ -255,7 +244,6 @@ const RetailerParts = () => {
                   )}
                 </div>
 
-                {/* Footer Details */}
                 <div className="mt-3 flex items-center justify-between border-t border-[#4A5D48] pt-3">
                   <span className="text-xs text-white/50">
                     {part.category}
@@ -265,8 +253,7 @@ const RetailerParts = () => {
                   </span>
                 </div>
 
-                {/* Minted At */}
-                {part.updatedAt && (
++                {part.updatedAt && (
                   <p className="text-xs text-white/30 mt-2">
                     Last updated:{" "}
                     {new Date(part.updatedAt).toLocaleDateString()}

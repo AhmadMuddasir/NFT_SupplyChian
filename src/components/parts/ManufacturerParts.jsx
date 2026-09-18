@@ -12,6 +12,8 @@ const ManufacturerParts = ({
   onSuccess,
 }) => {
 
+  parts.map((p)=>console.log("Manufacturer map Parts:",p));
+
     const router = useRouter();
 
   return (
@@ -41,7 +43,6 @@ const ManufacturerParts = ({
                onClick={() => router.push(`/manufacturer/${part._id}`)}
               className="flex flex-col justify-between rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden hover:border-[#8FA88A]/50 transition-colors"
             >
-              {/* Image Container: Full visibility with object-contain */}
               <div className="relative h-48 w-full bg-[#1C2620]/80 p-2 flex items-center justify-center">
                 <img
                   src={part.image?.url || part.thumbnail}
@@ -50,22 +51,18 @@ const ManufacturerParts = ({
                 />
               </div>
 
-              {/* Card Body */}
               <div className="p-4 flex flex-col flex-1 justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-base font-semibold text-white truncate">
                       {part.partName}
                     </h3>
-                    {part.tokenId ? (
+                   
                       <span className="shrink-0 rounded-full bg-green-900/50 px-2 py-0.5 text-xs text-green-400">
                         Token #{part.tokenId}
                       </span>
-                    ) : (
-                      <span className="shrink-0 rounded-full bg-yellow-900/50 px-2 py-0.5 text-xs text-yellow-400">
-                        Not minted
-                      </span>
-                    )}
+                 
+                 
                   </div>
                   <p className="text-sm text-white/60 mt-1 truncate">
                     {part.brandName}
@@ -73,6 +70,9 @@ const ManufacturerParts = ({
                   <p className="text-xs text-white/40 mt-2">
                     {part.category} · ${part.price} · Qty {part.quantity}
                   </p>
+                      <span className="shrink-0 rounded-full bg-yellow-900/50 px-2 py-0.5 text-xs text-yellow-400">
+                         {part.tokenId+1 ? "minted" : "not minted"} {/* because first token is 0 gives false */}
+                      </span>
                 </div>
 
                 <div className="mt-4 pt-2" onClick={(e) => e.stopPropagation()}>

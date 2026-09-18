@@ -7,6 +7,7 @@ import { autopartApi } from "@/lib/api/autopartApi";
 import toast from "react-hot-toast";
 import { Edit } from "lucide-react";
 import { Trash } from "lucide-react";
+import GenerateBill from "@/components/bill/GenerateBill";
 
 const STATUS_NAMES = [
   "NEW",
@@ -37,7 +38,7 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [chainData, setChainData] = useState(null);
 
-  // edit 
+  // edit
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -46,7 +47,7 @@ const Page = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // 
+  //
   const fetchPart = async () => {
     if (!id) return;
     try {
@@ -81,7 +82,6 @@ const Page = () => {
     fetchPart();
   }, [id, contract]);
 
-  // ========== OPEN EDIT ==========
   const openEdit = () => {
     setEditForm({
       partName: part.partName || "",
@@ -94,7 +94,6 @@ const Page = () => {
     setIsEditOpen(true);
   };
 
-  // ========== SAVE EDIT ==========
   const handleSaveEdit = async () => {
     if (!editForm.partName.trim() || !editForm.brandName.trim()) {
       toast.error("Part name and brand are required");
@@ -119,16 +118,14 @@ const Page = () => {
       await fetchPart();
     } catch (error) {
       console.error("Update error:", error);
-      toast.error(
-        error?.response?.data?.message || "Failed to update part",
-        { id: toastId }
-      );
+      toast.error(error?.response?.data?.message || "Failed to update part", {
+        id: toastId,
+      });
     } finally {
       setSavingEdit(false);
     }
   };
 
-  // ========== CONFIRM DELETE ==========
   const handleDelete = async () => {
     setDeleting(true);
     const toastId = toast.loading("Deleting part...");
@@ -140,16 +137,14 @@ const Page = () => {
       router.push("/manufacturer");
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error(
-        error?.response?.data?.message || "Failed to delete part",
-        { id: toastId }
-      );
+      toast.error(error?.response?.data?.message || "Failed to delete part", {
+        id: toastId,
+      });
     } finally {
       setDeleting(false);
     }
   };
 
-  // ========== LOADING ==========
   if (loading) {
     return (
       <div className="min-h-screen bg-[#1C2620] flex items-center justify-center px-6">
@@ -161,7 +156,6 @@ const Page = () => {
     );
   }
 
-  // ========== NOT FOUND ==========
   if (!part) {
     return (
       <div className="min-h-screen bg-[#1C2620] flex items-center justify-center px-6">
@@ -187,7 +181,6 @@ const Page = () => {
   return (
     <div className="min-h-screen bg-[#1C2620] px-6 py-16 sm:px-8">
       <div className="mx-auto max-w-5xl">
-        {/* ========== BACK BUTTON ========== */}
         <button
           onClick={() => router.push("/manufacturer")}
           className="mb-6 inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
@@ -195,7 +188,6 @@ const Page = () => {
           ← Back to Dashboard
         </button>
 
-        {/* ========== HEADER ========== */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-[#4A5D48] bg-[#8FA88A]/10 px-4 py-1.5 text-sm font-medium text-[#8FA88A]">
@@ -211,31 +203,33 @@ const Page = () => {
           <div className="flex flex-wrap items-center gap-3 self-start">
             {isMinted ? (
               <span className="rounded-full bg-green-900/50 border border-green-700/50 px-4 py-2 text-sm font-medium text-green-400">
-                 Token #{part.tokenId}
+                Token #{part.tokenId}
               </span>
             ) : (
               <span className="rounded-full bg-yellow-900/50 border border-yellow-700/50 px-4 py-2 text-sm font-medium text-yellow-400">
-                 Not Minted
+                Not Minted
               </span>
             )}
 
-            {/* ========== EDIT + DELETE BUTTONS ========== */}
             <button
               onClick={openEdit}
               className="rounded-md border border-[#4A5D48] px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-[#4A5D48]/20 hover:text-white"
             >
-              <Edit/> Edit
+              <Edit /> Edit
             </button>
             <button
               onClick={() => setIsDeleteOpen(true)}
               className="rounded-md border border-red-700/50 bg-red-900/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/40"
             >
-              <Trash/> Delete
+              <Trash /> Delete
             </button>
+                <GenerateBill
+                  part={part}
+                  contractAddress={process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}
+                />
           </div>
         </div>
 
-        {/* ========== MAIN CONTENT ========== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* LEFT COLUMN */}
           <div className="space-y-6">
@@ -268,7 +262,7 @@ const Page = () => {
             {part.description && (
               <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
                 <h3 className="text-sm font-semibold text-white/80 mb-2">
-                   Description
+                  Description
                 </h3>
                 <p className="text-sm text-white/60 leading-relaxed">
                   {part.description}
@@ -278,7 +272,7 @@ const Page = () => {
 
             <div className="rounded-xl border border-[#4A5D48] bg-[#243329] p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-4">
-                 Part Information
+                Part Information
               </h3>
               <div className="space-y-3">
                 <Row label="Category" value={part.category} capitalize />
@@ -299,8 +293,13 @@ const Page = () => {
                 🔗 On-Chain Status
               </h3>
               <div className="space-y-3">
-                <Row label="Minted" value={isMinted ? "✅ Yes" : "⏳ Not yet"} />
-                {isMinted && <Row label="Token ID" value={`#${part.tokenId}`} />}
+                <Row
+                  label="Minted"
+                  value={isMinted ? "✅ Yes" : "⏳ Not yet"}
+                />
+                {isMinted && (
+                  <Row label="Token ID" value={`#${part.tokenId}`} />
+                )}
                 {chainData?.saleStatus && (
                   <Row label="Sale Status" value={chainData.saleStatus} />
                 )}
@@ -346,7 +345,7 @@ const Page = () => {
                 <a
                   href={part.tokenURI.replace(
                     "ipfs://",
-                    "https://gateway.pinata.cloud/ipfs/"
+                    "https://gateway.pinata.cloud/ipfs/",
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -373,7 +372,6 @@ const Page = () => {
         </div>
       </div>
 
-      {/* ========== EDIT MODAL ========== */}
       {isEditOpen && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-[#4A5D48] bg-[#1C2620] p-6 shadow-xl">
@@ -485,7 +483,6 @@ const Page = () => {
         </div>
       )}
 
-      {/* ========== DELETE MODAL ========== */}
       {isDeleteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="relative w-full max-w-md rounded-lg border border-red-700/50 bg-[#1C2620] p-6 shadow-xl">
@@ -496,8 +493,10 @@ const Page = () => {
               <div>
                 <h3 className="text-lg font-bold text-white">Delete Part?</h3>
                 <p className="mt-1 text-sm text-white/60">
-                  This will remove <strong className="text-white">{part.partName}</strong>{" "}
-                  from your dashboard. It won't affect any NFTs already minted on-chain.
+                  This will remove{" "}
+                  <strong className="text-white">{part.partName}</strong> from
+                  your dashboard. It won't affect any NFTs already minted
+                  on-chain.
                 </p>
               </div>
             </div>
@@ -510,6 +509,7 @@ const Page = () => {
               >
                 {deleting ? "Deleting..." : "Yes, Delete"}
               </button>
+
               <button
                 onClick={() => setIsDeleteOpen(false)}
                 disabled={deleting}
@@ -520,12 +520,11 @@ const Page = () => {
             </div>
           </div>
         </div>
-      )}
+      )}      
     </div>
   );
 };
 
-// ========== HELPERS ==========
 const Row = ({ label, value, mono = false, capitalize = false }) => (
   <div className="flex items-start justify-between gap-4">
     <span className="text-xs text-white/50 shrink-0">{label}</span>

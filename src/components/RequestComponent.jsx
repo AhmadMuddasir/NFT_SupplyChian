@@ -42,9 +42,7 @@ const RequestComponent = ({
     }
   };
 
-  // ========== FIND A MATCHING PART (single source of truth) ==========
   const getSourcePart = (request) => {
-    // 1. Exact name match (via ethers.id)
     const exact = parts.find((p) => {
       if (!p.partName) return false;
       try {
@@ -55,11 +53,9 @@ const RequestComponent = ({
     });
     if (exact) return { part: exact, matched: "exact" };
 
-    // 2. Fallback: any part without a minted tokenId
     const unminted = parts.find((p) => !p.tokenId);
     if (unminted) return { part: unminted, matched: "fallback" };
 
-    // 3. Fallback: any part at all
     if (parts.length > 0) {
       return { part: parts[0], matched: "fallback" };
     }
@@ -67,7 +63,6 @@ const RequestComponent = ({
     return { part: null, matched: "insufficient" };
   };
 
-  // ========== BUILD URIS + HASHES ARRAYS ==========
   const buildFulfillmentArrays = (request) => {
     const { part, matched } = getSourcePart(request);
 
@@ -130,7 +125,6 @@ const RequestComponent = ({
 
   return (
     <div className="mt-6 space-y-10">
-      {/* ========== RETAILER REQUESTS ========== */}
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">
@@ -176,7 +170,6 @@ const RequestComponent = ({
         )}
       </div>
 
-      {/* ========== SUPPLY REQUESTS ========== */}
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Supply Requests</h2>
