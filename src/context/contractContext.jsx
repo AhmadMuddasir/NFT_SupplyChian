@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { useAccount } from "wagmi";
 import { ABI, ContractAddress } from "@/lib/contract/constans";
 import toast from "react-hot-toast";
+import { getFriendlyError } from "@/lib/utils/contractError";
 
 const ContractContext = createContext(null);
 
@@ -58,13 +59,19 @@ export const ContractProvider = ({ children }) => {
       return await tnx.wait();
     } catch (error) {
       console.log(error);
+      throw new Error(getFriendlyError(error));
+
     }
   };
 
   const addRetailer = async (retailerAddress) => {
-    if (!contract) throw new Error("Contract not initialized");
-    const tx = await contract.addRetailer(retailerAddress);
-    return await tx.wait();
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      const tx = await contract.addRetailer(retailerAddress);
+      return await tx.wait();
+    } catch (error) {
+      throw new Error(getFriendlyError(error));
+    }
   };
 
   const AddRetailerDirectly = async (retailerAddress, name, location) => {
@@ -106,51 +113,107 @@ export const ContractProvider = ({ children }) => {
     return { tokenId, receipt };
   } catch (error) {
     console.log("mintToRetailer error:",error)
+    throw new Error(getFriendlyError(error));
   }
   };
 
   const removeRetailer = async (retailerAddress) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.removeRetailer(retailerAddress);
-    return await tnx.wait();
+    try {      
+      if (!contract) throw new Error("Contract not initaialize");
+      const tnx = await contract.removeRetailer(retailerAddress);
+      return await tnx.wait();
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
+    }
   };
 
-  const fullfillSupplyRequest = async (requestId, uris, metadataHashed) => {
+const fullfillSupplyRequest = async (requestId, uris, metadataHashed) => {
+  try {
     if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.fulfillSupplyRequest(
-      requestId,
-      uris,
-      metadataHashed,
-    );
-    return await tnx.wait();
-  };
+    const tnx = await contract.fulfillSupplyRequest(requestId, uris, metadataHashed);
+    const receipt = await tnx.wait();
+
+    const event = receipt.logs
+      .map((log) => {
+        try {
+          return contract.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      })
+      .find((parsed) => parsed && parsed.name === "SupplyRequestFulfilled");
+
+    const tokenIds = event ? event.args.tokenIds.map((t) => Number(t)) : [];
+
+    return { receipt, tokenIds }; 
+  } catch (error) {
+    throw new Error(getFriendlyError(error));
+  }
+};
 
   const repairPart = async (tokenId) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.repairPart(tokenId);
-    return await tnx.wait();
+    try {      
+      if (!contract) throw new Error("Contract not initaialize");
+      try {
+      await contract.ownerOf(tokenId);
+    } catch {
+      throw new Error(" This token ID does not exist on-chain");
+    }
+      const tnx = await contract.repairPart(tokenId);
+      return await tnx.wait();
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
+    }
   };
   const refurbishedPart = async (tokenId) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.refurbishPart(tokenId);
-    return await tnx.wait();
+    try {
+      
+      if (!contract) throw new Error("Contract not initaialize");
+      try {
+      await contract.ownerOf(tokenId);
+    } catch {
+      throw new Error(" This token ID does not exist on-chain");
+    }
+      const tnx = await contract.refurbishPart(tokenId);
+      return await tnx.wait();
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
+    }
   };
   const recallPart = async (tokenId) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.recallPart(tokenId);
-    return await tnx.wait();
+    try {      
+      if (!contract) throw new Error("Contract not initaialize");
+    try {
+      await contract.ownerOf(tokenId);
+    } catch {
+      throw new Error(" This token ID does not exist on-chain");
+    }
+
+      const tnx = await contract.recallPart(tokenId);
+      return await tnx.wait();
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
+    }
   };
   const cancelSupplyRequest = async (requestId) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    console.log("upto here")
-    const tnx = await contract.cancelSupplyRequest(requestId);
-    return await tnx.wait();
+    try {
+      if (!contract) throw new Error("Contract not initaialize");
+      console.log("upto here")
+      const tnx = await contract.cancelSupplyRequest(requestId);
+      return await tnx.wait();
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
+    }
   };
 
   const transferToRetailer = async (to, tokenId) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.transferToRetailer(to, tokenId);
-    return await tnx.wait();
+    try {  
+      if (!contract) throw new Error("Contract not initaialize");
+      const tnx = await contract.transferToRetailer(to, tokenId);
+      return await tnx.wait();
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
+    }
   };
 
   const batchMintToRetailer = async (
@@ -183,7 +246,7 @@ export const ContractProvider = ({ children }) => {
             allTokenIds.push(parsed.args.tokenId);
           }
         } catch (_) {
-          /* ignore non-contract logs */
+      throw new Error(getFriendlyError(error));
         }
       });
 
@@ -195,106 +258,154 @@ export const ContractProvider = ({ children }) => {
   };
 
   const getRetailerRequests = async () => {
-    if (!contract) throw new Error("wait or refresh the page");
-    const result = await contract.getRetailerRequests(); // returns address[]
+    try {
+      if (!contract) throw new Error("wait or refresh the page");
+      const result = await contract.getRetailerRequests(); // returns address[]
+  
+      const addresses = Array.from(result);
+  
+      const requests = await Promise.all(
+        addresses.map(async (addr) => {
+          const details = await contract.retailerDetails(addr);
+          return {
+            address: addr,
+            name: details[0],
+            location: details[1],
+            isApprove: details[2],
+          };
+        }),
+      );
+  
+      return requests.filter((r) => !r.isApprove);
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
 
-    const addresses = Array.from(result);
-
-    const requests = await Promise.all(
-      addresses.map(async (addr) => {
-        const details = await contract.retailerDetails(addr);
-        return {
-          address: addr,
-          name: details[0],
-          location: details[1],
-          isApprove: details[2],
-        };
-      }),
-    );
-
-    return requests.filter((r) => !r.isApprove);
+    }
   };
 
   const requestForRetailer = async (name, location) => {
-    if (!contract) throw new Error("Contract not initaialize");
-    const tnx = await contract.requestForRetailer(name, location);
-    setrequestNotification((prev) => prev + 1);
-    return await tnx.wait();
+    try {
+      
+      if (!contract) throw new Error("Contract not initaialize");
+      const tnx = await contract.requestForRetailer(name, location);
+      setrequestNotification((prev) => prev + 1);
+      return await tnx.wait();
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
+    }
   };
 
   const getRetailerStatus = async () => {
-    if (!contract || !address) {
+    try {
+      if (!contract || !address) {
+        return {
+          isRetailer: false,
+          isPending: false,
+          name: "",
+          location: "",
+        };
+      }
+      const RETAILER_ROLE = await contract.RETAILER_ROLE();
+      const isRetailer = await contract.hasRole(RETAILER_ROLE, address);
+      const details = await contract.retailerDetails(address);
+      const name = details[0];
+      const location = details[1];
+  
       return {
-        isRetailer: false,
-        isPending: false,
-        name: "",
-        location: "",
+        isRetailer,
+        // has called requestForRetailer (name is set) but not yet approved
+        isPending: !isRetailer && name && name.length > 0,
+        name,
+        location,
       };
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
     }
-    const RETAILER_ROLE = await contract.RETAILER_ROLE();
-    const isRetailer = await contract.hasRole(RETAILER_ROLE, address);
-    const details = await contract.retailerDetails(address);
-    const name = details[0];
-    const location = details[1];
-
-    return {
-      isRetailer,
-      // has called requestForRetailer (name is set) but not yet approved
-      isPending: !isRetailer && name && name.length > 0,
-      name,
-      location,
-    };
   };
 
   const getRetailerDetails = async (retailerAddress) => {
-    if (!contract) throw new Error("wait or refresh the page");
-    if (!retailerAddress || retailerAddress === ethers.ZeroAddress) {
-      return { name: "", location: "", isApprove: false };
+    try {
+      
+      if (!contract) throw new Error("wait or refresh the page");
+      if (!retailerAddress || retailerAddress === ethers.ZeroAddress) {
+        return { name: "", location: "", isApprove: false };
+      }
+      const details = await contract.retailerDetails(retailerAddress);
+      return {
+        name: details[0],
+        location: details[1],
+        isApprove: details[2],
+      };
+    } catch (error) {
+            throw new Error(getFriendlyError(error));
+
     }
-    const details = await contract.retailerDetails(retailerAddress);
-    return {
-      name: details[0],
-      location: details[1],
-      isApprove: details[2],
-    };
   };
 
   const createSupplyRequest = async (productHash, quantity) => {
-    if (!contract) throw new Error("Contract not initailize");
-    const tnx = await contract.createSupplyRequest(productHash, quantity);
-    return await tnx.wait();
+    try {
+      if (!contract) throw new Error("Contract not initailize");
+      const tnx = await contract.createSupplyRequest(productHash, quantity);
+      return await tnx.wait();
+      
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
+
+    }
   };
   const shipPart = async (tokenId, PhoneNumber, trackingId) => {
-    if (!contract) throw new Error("Contract not initailaze");
-    const tnx = await contract.shipPart(tokenId, PhoneNumber, trackingId);
-    return await tnx.wait();
+        try {
+      
+          if (!contract) throw new Error("Contract not initailaze");
+          const tnx = await contract.shipPart(tokenId, PhoneNumber, trackingId);
+          return await tnx.wait();
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
+
+    }
   };
   const confirmDelivery = async (tokenId) => {
-    if (!contract) throw new Error("Contract not initailaze");
-    const tnx = await contract.confirmDelivery(tokenId);
-    return await tnx.wait();
+        try {    
+          if (!contract) throw new Error("Contract not initailaze");
+          const tnx = await contract.confirmDelivery(tokenId);
+          return await tnx.wait();
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
+
+    }
   };
   const reportDefectiveReturn = async (tokenId) => {
-    if (!contract) throw new Error("Contract not initailaze");
-    const tnx = await contract.reportDefectiveReturn(tokenId);
-    return await tnx.wait();
+      try {
+      
+          if (!contract) throw new Error("Contract not initailaze");
+          const tnx = await contract.reportDefectiveReturn(tokenId);
+          return await tnx.wait();
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
+
+    }
   };
 
   // read functions
 
   const getAllManufacturers = async () => {
-    if (!contract) throw new Error("wait or refresh the page");
-    const result = await contract.getAllManufacturers();
+        try {
+          if (!contract) throw new Error("wait or refresh the page");
+          const result = await contract.getAllManufacturers();
+      
+          const addresses = Array.from(result[0]);
+          const names = Array.from(result[1]);
+          const locations = Array.from(result[2]);
+      
+          return addresses.map((addr, i) => ({
+            address: addr,
+            name: names[i],
+            location: locations[i],
+          }));
+    } catch (error) {
+        throw new Error(getFriendlyError(error));
 
-    const addresses = Array.from(result[0]);
-    const names = Array.from(result[1]);
-    const locations = Array.from(result[2]);
-
-    return addresses.map((addr, i) => ({
-      address: addr,
-      name: names[i],
-      location: locations[i],
-    }));
+    }
   };
 
   const getAllRetailers = async () => {
@@ -314,26 +425,35 @@ export const ContractProvider = ({ children }) => {
 
   const getSupplyRequest = async (requestId) => {
     if (!contract) throw new Error("wait or refresh the page");
-    return await contract.supplyRequests(requestId);
+    const data =  await contract.supplyRequests(requestId);
+    console.log("getSupplyRequest ",data);
+    return data;
   };
 
-  const getAllSupplyRequests = async () => {
-    if (!contract) throw new Error("wait or refresh the page");
-    const requests = [];
-    for (let id = 0; id < 100; id++) {
-      const req = await contract.supplyRequests(id);
-      if (req.requester === ethers.ZeroAddress) break;
-      requests.push({
-        requestId: id,
-        requester: req.requester,
-        productHash: req.productHash,
-        quantity: Number(req.quantity),
-        requestTime: Number(req.requestTime),
-        fulfilled: req.fulfilled,
-      });
+const getAllSupplyRequests = async () => {
+  if (!contract) throw new Error("wait or refresh the page");
+  const requests = [];
+  let consecutiveEmpty = 0;
+
+  for (let id = 0; id < 100; id++) {
+    const req = await contract.supplyRequests(id);
+    if (req.requester === ethers.ZeroAddress) {
+      consecutiveEmpty++;
+      if (consecutiveEmpty > 5) break;
+      continue;
     }
-    return requests;
-  };
+    consecutiveEmpty = 0;
+    requests.push({
+      requestId: id,
+      requester: req.requester,
+      productHash: req.productHash,
+      quantity: Number(req.quantity),
+      requestTime: Number(req.requestTime),
+      fulfilled: req.fulfilled,
+    });
+  }
+  return requests;
+};
   const verifyPartAuthenticity = async (tokenId) => {
     return await contract.verifyPartAuthenticity(tokenId);
   };
@@ -353,12 +473,12 @@ export const ContractProvider = ({ children }) => {
     recallPart,
     transferToRetailer,
     requestForRetailer,
-    getRetailerStatus,
-    getRetailerDetails,
     createSupplyRequest,
     shipPart,
     confirmDelivery,
     reportDefectiveReturn,
+    getRetailerStatus,
+    getRetailerDetails,
     getAllManufacturers,
     getAllRetailers,
     getCustomerPhoneNumber,

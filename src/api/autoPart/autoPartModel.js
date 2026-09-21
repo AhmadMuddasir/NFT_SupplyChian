@@ -80,6 +80,16 @@ const autoPartSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
+    quantity: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
+    mintedCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     createdBy: {
       address: {
         type: String,
@@ -100,6 +110,8 @@ const autoPartSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
 
@@ -108,10 +120,11 @@ autoPartSchema.index({
   brandName: "text",
 });
 
-
-
+autoPartSchema.virtual("remainingQuantity").get(function () {
+  return Math.max(this.quantity - this.mintedCount, 0);
+});
 autoPartSchema.virtual("isInStock").get(function () {
-  return this.quantity > 0;
+  return this.remainingQuantity > 0;
 });
 
 autoPartSchema.statics.findByTokenId = function (tokenId) {

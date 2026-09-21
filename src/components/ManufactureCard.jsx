@@ -22,9 +22,7 @@ const ManufactureCard = ({ title, description, fields, onSubmit }) => {
       setIsOpen(false);
     } catch (err) {
       console.log(err);
-      toast.error("Transaction failed.", {
-        id: toastId,
-      });
+      toast.error(err?.message || "Transaction failed", { id: toastId });
     } finally {
       setIsSubmitting(false);
     }

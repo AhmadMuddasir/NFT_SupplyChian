@@ -1,3 +1,4 @@
+// FILE: components/parts/ManufacturerParts.jsx
 "use client";
 
 import React from "react";
@@ -37,59 +38,73 @@ const ManufacturerParts = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {parts.map((part) => (
-            <div
-              key={part._id}
-               onClick={() => router.push(`/manufacturer/${part._id}`)}
-              className="flex flex-col justify-between rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden hover:border-[#8FA88A]/50 transition-colors"
-            >
-              <div className="relative h-48 w-full bg-[#1C2620]/80 p-2 flex items-center justify-center">
-                <img
-                  src={part.image?.url || part.thumbnail}
-                  alt={part.partName}
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
+          {parts.map((part) => {
+            // CHANGE: compute remaining stock from quantity - mintedCount.
+            // Falls back to part.quantity if mintedCount isn't present yet (e.g. old records
+            // created before this field existed), so nothing breaks for pre-existing data.
+            const mintedCount = part.mintedCount || 0;
+            const remaining = Math.max((part.quantity ?? 0) - mintedCount, 0);
+            const outOfStock = remaining <= 0;
 
-              <div className="p-4 flex flex-col flex-1 justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-base font-semibold text-white truncate">
-                      {part.partName}
-                    </h3>
-                   
-                      <span className="shrink-0 rounded-full bg-green-900/50 px-2 py-0.5 text-xs text-green-400">
-                        Token #{part.tokenId}
-                      </span>
-                 
-                 
-                  </div>
-                  <p className="text-sm text-white/60 mt-1 truncate">
-                    {part.brandName}
-                  </p>
-                  <p className="text-xs text-white/40 mt-2">
-                    {part.category} · ${part.price} · Qty {part.quantity}
-                  </p>
-                      <span className="shrink-0 rounded-full bg-yellow-900/50 px-2 py-0.5 text-xs text-yellow-400">
-                         {part.tokenId+1 ? "minted" : "not minted"} {/* because first token is 0 gives false */}
-                      </span>
-                </div>
-
-                <div className="mt-4 pt-2" onClick={(e) => e.stopPropagation()}>
-                  <MintPartButton
-                    partId={part._id}
-                    tokenId={part.tokenId}
-                    tokenURI={part.tokenURI}
-                    metadataHash={part.metadataHash}
-                    onSuccess={onSuccess}
+            return (
+              <div
+                key={part._id}
+                 onClick={() => router.push(`/manufacturer/${part._id}`)}
+                className="flex flex-col justify-between rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden hover:border-[#8FA88A]/50 transition-colors"
+              >
+                <div className="relative h-48 w-full bg-[#1C2620]/80 p-2 flex items-center justify-center">
+                  <img
+                    src={part.image?.url || part.thumbnail}
+                    alt={part.partName}
+                    className="max-h-full max-w-full object-contain"
                   />
+                  {/* CHANGE: out-of-stock ribbon so it's visible without reading the text below */}
+                  {outOfStock && (
+                    <span className="absolute top-2 right-2 rounded-full bg-red-900/70 px-2 py-0.5 text-[10px] font-medium text-red-300">
+                      Out of stock
+                    </span>
+                  )}
                 </div>
-                <p className="mt-3 text-xs text-[#8FA88A] text-center">
-                  Click card to view details →
-                </p>
+
+                <div className="p-4 flex flex-col flex-1 justify-between">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-base font-semibold text-white truncate">
+                        {part.partName}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-white/60 mt-1 truncate">
+                      {part.brandName}
+                    </p>
+
+                    <p className="text-xs text-white/40 mt-2">
+                      {part.category} · ${part.price}
+                    </p>
+                    <p className="text-xs text-white/40 mt-1">
+                      Minted {mintedCount} / {part.quantity ?? 0} ·{" "}
+                      <span className={outOfStock ? "text-red-400" : "text-[#8FA88A]"}>
+                        {remaining} remaining
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="mt-4 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <MintPartButton
+                      partId={part._id}
+                      tokenURI={part.tokenURI}
+                      metadataHash={part.metadataHash}
+                      disabled={outOfStock} 
+                      onSuccess={onSuccess}
+                    />
+
+                  </div>
+                  <p className="mt-3 text-xs text-[#8FA88A] text-center">
+                    Click card to view details →
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

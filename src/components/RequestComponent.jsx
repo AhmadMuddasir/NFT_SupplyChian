@@ -16,11 +16,14 @@ const RequestComponent = ({
 
   const {cancelSupplyRequest} = useContract();
 
+
   const [approvingAddress, setApprovingAddress] = useState(null);
   const [fulfillingId, setFulfillingId] = useState(null);
   const [previewRequestId, setPreviewRequestId] = useState(null);
+  console.log("Requestcmpnt:",supplyRequests);
 
   const pendingSupplyRequests = supplyRequests.filter((r) => !r.fulfilled);
+  console.log("pendingSupplyRequests",pendingSupplyRequests);
   
   const cancelRequest = async(requestId)=>{
     await cancelSupplyRequest(requestId);
@@ -81,47 +84,36 @@ const RequestComponent = ({
     return { uris, hashes, matched, part };
   };
 
-  const handleAutoFulfill = async (request) => {
-    if (!onFulfillSupply) return;
+const handleAutoFulfill = async (request) => {
+  if (!onFulfillSupply) return;
 
-    const { uris, hashes, matched, part } = buildFulfillmentArrays(request);
+  const { uris, hashes, matched, part } = buildFulfillmentArrays(request);
 
-    if (matched === "insufficient" || !part) {
-      toast.error("No parts available to fulfill this request");
-      return;
-    }
+  if (matched === "insufficient" || !part) {
+    toast.error("No parts available to fulfill this request");
+    return;
+  }
+  if (matched === "missing-metadata") {
+    toast.error("Part is missing tokenURI or metadataHash");
+    return;
+  }
+  if (uris.length !== request.quantity || hashes.length !== request.quantity) {
+    toast.error(`Need ${request.quantity} URI(s) and hash(es), got ${uris.length} and ${hashes.length}`);
+    return;
+  }
 
-    if (matched === "missing-metadata") {
-      toast.error("Part is missing tokenURI or metadataHash");
-      return;
-    }
-
-    if (
-      uris.length !== request.quantity ||
-      hashes.length !== request.quantity
-    ) {
-      toast.error(
-        `Need ${request.quantity} URI(s) and hash(es), got ${uris.length} and ${hashes.length}`,
-      );
-      return;
-    }
-
-    try {
-      setFulfillingId(request.requestId);
-      await onFulfillSupply(request.requestId, uris, hashes);
-      toast.success(
-        `Request #${request.requestId} fulfilled · Minted ${request.quantity} NFT(s)`,
-      );
-      setPreviewRequestId(null);
-    } catch (error) {
-      console.log(error);
-      toast.error(
-        error?.reason || error?.message || "Failed to fulfill request",
-      );
-    } finally {
-      setFulfillingId(null);
-    }
-  };
+  try {
+    setFulfillingId(request.requestId);
+    await onFulfillSupply(request.requestId, uris, hashes, part, request.requester); // CHANGE: now also passes `part` and `request.requester`
+    toast.success(`Request #${request.requestId} fulfilled · Minted ${request.quantity} NFT(s)`);
+    setPreviewRequestId(null);
+  } catch (error) {
+    console.log(error);
+    toast.error(error?.reason || error?.message || "Failed to fulfill request");
+  } finally {
+    setFulfillingId(null);
+  }
+};
 
   return (
     <div className="mt-6 space-y-10">

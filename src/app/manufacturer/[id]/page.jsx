@@ -35,6 +35,7 @@ const Page = () => {
   const { contract, getSaleStatus, getNFTCustodian } = useContract();
 
   const [part, setPart] = useState(null);
+  console.log(part)
   const [loading, setLoading] = useState(true);
   const [chainData, setChainData] = useState(null);
 
@@ -201,15 +202,6 @@ const Page = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 self-start">
-            {isMinted ? (
-              <span className="rounded-full bg-green-900/50 border border-green-700/50 px-4 py-2 text-sm font-medium text-green-400">
-                Token #{part.tokenId}
-              </span>
-            ) : (
-              <span className="rounded-full bg-yellow-900/50 border border-yellow-700/50 px-4 py-2 text-sm font-medium text-yellow-400">
-                Not Minted
-              </span>
-            )}
 
             <button
               onClick={openEdit}

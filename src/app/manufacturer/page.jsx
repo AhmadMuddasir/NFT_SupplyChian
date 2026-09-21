@@ -1,7 +1,7 @@
 "use client";
 
 import { ethers } from "ethers";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { useContract } from "@/context/contractContext";
 import ManufactureCard from "@/components/ManufactureCard";
@@ -45,8 +45,8 @@ const Page = () => {
   const [supplyRequests, setSupplyRequests] = useState([]);
   const [retailerRequests, setRetailerRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
-  console.log("my parts",parts)
-  // console.log("my parts created",parts.createdBy.address);
+  const hasFetchedRequests = useRef(false); // NEW
+
 
   useEffect(() => {
     if (!contract) return;
@@ -65,6 +65,7 @@ const Page = () => {
   const fetchParts = async () => {
     if (!address) return;
     try {
+      
       setLoadingParts(true);
       const result = await autopartApi.getAll({ limit: 30 });
       const fetchedParts = result.data?.autoParts || [];
@@ -89,23 +90,27 @@ const Page = () => {
     }
   }, [isConnected, address]);
 
-  const fetchRequests = async () => {
-    if (!contract) return;
-    try {
+
+const fetchRequests = async () => {
+  if (!contract) return;
+  try {
+    if (!hasFetchedRequests.current) {
       setLoadingRequests(true);
-      const [retailerReqs, supplyReqs] = await Promise.all([
-        getRetailerRequests(),
-        getAllSupplyRequests(),
-      ]);
-      setRetailerRequests(retailerReqs);
-      setSupplyRequests(supplyReqs);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-      toast.error("Failed to load requests");
-    } finally {
-      setLoadingRequests(false);
     }
-  };
+    const [retailerReqs, supplyReqs] = await Promise.all([
+      getRetailerRequests(),
+      getAllSupplyRequests(),
+    ]);
+    setRetailerRequests(retailerReqs);
+    setSupplyRequests(supplyReqs);
+    hasFetchedRequests.current = true;
+  } catch (error) {
+    console.error("Error fetching requests:", error);
+    toast.error("Failed to load requests");
+  } finally {
+    setLoadingRequests(false);
+  }
+};
 
   useEffect(() => {
     if (contract && activeTab === "requests") {
@@ -118,10 +123,24 @@ const Page = () => {
     await fetchRequests();
   };
 
-  const handleFulfillSupply = async (requestId, uris, hashes) => {
-    await fullfillSupplyRequest(requestId, uris, hashes);
-    await fetchRequests();
-  };
+const handleFulfillSupply = async (requestId, uris, hashes, part, retailerAddress) => {
+  const { receipt, tokenIds } = await fullfillSupplyRequest(requestId, uris, hashes);
+
+  if (tokenIds.length > 0 && part?._id) {
+    try {
+      await autopartApi.recordMintedUnitsBatch(part._id, {
+        tokenIds,
+        retailerAddress,
+        transactionHash: receipt.hash,
+      });
+    } catch (err) {
+      console.error("Minted on-chain but failed to record units in DB:", err);
+      toast.error("Minted on-chain, but failed to sync to database.");
+    }
+  }
+
+  await fetchRequests();
+};
 
   const pendingRetailerCount = retailerRequests.length;
   const pendingSupplyCount = supplyRequests.filter((r) => !r.fulfilled).length;

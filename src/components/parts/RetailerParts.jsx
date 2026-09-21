@@ -5,27 +5,19 @@ import { useAccount } from "wagmi";
 import { useContract } from "@/context/contractContext";
 import { autopartApi } from "@/lib/api/autopartApi";
 import toast from "react-hot-toast";
-import { RefreshCcwDotIcon } from "lucide-react";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, ChevronDown } from "lucide-react"; // CHANGE: added ChevronDown for expand indicator
 
-const STATUS_NAMES = [
-  "NEW",
-  "RECALLED",
-  "DEFECTIVE_RETURNED",
-  "REPAIRED",
-  "REFURBISHED",
-];
-
+const STATUS_NAMES = ["NEW", "RECALLED", "DEFECTIVE_RETURNED", "REPAIRED", "REFURBISHED"];
 const SALE_STATUS_NAMES = ["UNSOLD", "IN_TRANSIT", "SOLD", "RETURNED"];
 
 const RetailerParts = () => {
   const { address, isConnected } = useAccount();
-  const { contract, getSaleStatus, getNFTCustodian, verifyPartAuthenticity } =
-    useContract();
+  const { contract, getSaleStatus, getNFTCustodian, verifyPartAuthenticity } = useContract();
 
   const [myParts, setMyParts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all | UNSOLD | IN_TRANSIT | SOLD | RETURNED
+  const [filter, setFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState(null); // CHANGE: replaces modal — tracks which card is expanded
 
   const fetchMyParts = async () => {
     if (!contract || !address) return;
@@ -33,40 +25,36 @@ const RetailerParts = () => {
     try {
       setLoading(true);
 
-      // 1. Get all parts from DB
-      const result = await autopartApi.getAll({ limit: 100 });
-      const allParts = result.data?.autoParts || [];
+      // CHANGE: source candidate list from MintedUnit (per-retailer), not from AutoPart templates.
+      // AutoPart no longer carries a single tokenId, so filtering templates by tokenId is wrong now.
+      const result = await autopartApi.getUnitsForRetailer(address);
+      const units = result.data?.units || [];
 
-      // 2. Only keep parts that have been minted
-      const minted = allParts.filter(
-        (p) => p.tokenId !== undefined && p.tokenId !== null
-      );
-
-      // 3. Check ownership + enrich with blockchain data (in parallel)
+      // Still verify live on-chain ownership — a unit initially minted to this retailer may have
+      // since been transferred/returned, so DB record alone isn't authoritative for "do I own it now"
       const enriched = await Promise.all(
-        minted.map(async (part) => {
+        units.map(async (unit) => {
           try {
-            const owner = await contract.ownerOf(part.tokenId);
+            const owner = await contract.ownerOf(unit.tokenId);
             const isMine = owner.toLowerCase() === address.toLowerCase();
-
             if (!isMine) return null;
 
             const [saleStatus, custodian, authenticity] = await Promise.all([
-              getSaleStatus(part.tokenId),
-              getNFTCustodian(part.tokenId),
-              verifyPartAuthenticity(part.tokenId),
+              getSaleStatus(unit.tokenId),
+              getNFTCustodian(unit.tokenId),
+              verifyPartAuthenticity(unit.tokenId),
             ]);
 
             return {
-              ...part,
+              ...unit,
+              part: unit.autoPart || {}, // CHANGE: template fields now nested under unit.autoPart
               owner,
               saleStatus: SALE_STATUS_NAMES[Number(saleStatus)],
               custodian,
               partStatus: STATUS_NAMES[Number(authenticity[1])],
               isAuthentic: authenticity[0],
             };
-          } catch (err) {
-            // Token may not exist or RPC hiccup — skip silently
+          } catch {
             return null;
           }
         })
@@ -87,10 +75,7 @@ const RetailerParts = () => {
     }
   }, [isConnected, address, contract]);
 
-  const visible =
-    filter === "all"
-      ? myParts
-      : myParts.filter((p) => p.saleStatus === filter);
+  const visible = filter === "all" ? myParts : myParts.filter((p) => p.saleStatus === filter);
 
   const stats = {
     total: myParts.length,
@@ -101,16 +86,11 @@ const RetailerParts = () => {
 
   const getSaleStatusStyle = (status) => {
     switch (status) {
-      case "UNSOLD":
-        return "bg-blue-900/40 border-blue-700/50 text-blue-400";
-      case "IN_TRANSIT":
-        return "bg-yellow-900/40 border-yellow-700/50 text-yellow-400";
-      case "SOLD":
-        return "bg-green-900/40 border-green-700/50 text-green-400";
-      case "RETURNED":
-        return "bg-red-900/40 border-red-700/50 text-red-400";
-      default:
-        return "bg-white/5 border-white/20 text-white/60";
+      case "UNSOLD": return "bg-blue-900/40 border-blue-700/50 text-blue-400";
+      case "IN_TRANSIT": return "bg-yellow-900/40 border-yellow-700/50 text-yellow-400";
+      case "SOLD": return "bg-green-900/40 border-green-700/50 text-green-400";
+      case "RETURNED": return "bg-red-900/40 border-red-700/50 text-red-400";
+      default: return "bg-white/5 border-white/20 text-white/60";
     }
   };
 
@@ -136,19 +116,16 @@ const RetailerParts = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">My Inventory</h2>
-          <p className="text-xs text-white/50 mt-1">
-            All NFTs currently held by your wallet
-          </p>
+          <p className="text-xs text-white/50 mt-1">All NFTs currently held by your wallet</p>
         </div>
         <button
           onClick={fetchMyParts}
           className="self-start rounded-md border border-[#4A5D48] px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-[#4A5D48]/20 hover:text-white"
         >
-          <RefreshCcw/>
+          <RefreshCcw size={16} />
         </button>
       </div>
 
-      {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border border-[#4A5D48] bg-[#243329] p-3">
           <p className="text-xs text-white/50">Total</p>
@@ -160,9 +137,7 @@ const RetailerParts = () => {
         </div>
         <div className="rounded-lg border border-[#4A5D48] bg-[#243329] p-3">
           <p className="text-xs text-white/50">In Transit</p>
-          <p className="text-2xl font-bold text-yellow-400 mt-1">
-            {stats.inTransit}
-          </p>
+          <p className="text-2xl font-bold text-yellow-400 mt-1">{stats.inTransit}</p>
         </div>
         <div className="rounded-lg border border-[#4A5D48] bg-[#243329] p-3">
           <p className="text-xs text-white/50">Sold</p>
@@ -186,82 +161,89 @@ const RetailerParts = () => {
         ))}
       </div>
 
+      {/* CHANGE: replaced grid-of-cards-with-modal with a vertical list of expandable rows */}
       {visible.length === 0 ? (
         <div className="text-center py-20 rounded-xl border border-dashed border-[#4A5D48] bg-[#243329]/50">
           <p className="text-white/60">
-            {myParts.length === 0
-              ? "You don't own any parts yet."
-              : `No parts with status "${filter}"`}
+            {myParts.length === 0 ? "You don't own any parts yet." : `No parts with status "${filter}"`}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {visible.map((part) => (
-            <div
-              key={part._id}
-              className="rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden hover:border-[#8FA88A]/50 transition-colors"
-            >
-              {/* Image */}
-              <img
-                src={part.image?.url || part.thumbnail}
-                alt={part.partName}
-                className="h-40 w-full object-cover"
-              />
+        <div className="space-y-3">
+          {visible.map((unit) => {
+            const part = unit.part;
+            const isExpanded = expandedId === unit._id;
 
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-base font-semibold text-white line-clamp-1">
-                    {part.partName}
-                  </h3>
-                  <span className="shrink-0 rounded-full bg-[#8FA88A]/10 px-2 py-0.5 text-xs text-[#8FA88A]">
-                    Token Id: {part.tokenId}
-                  </span>
-                </div>
+            return (
+              <div
+                key={unit._id}
+                className="rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden hover:border-[#8FA88A]/50 transition-colors"
+              >
+                {/* CHANGE: compact row header — click toggles expansion, no modal */}
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : unit._id)}
+                  className="w-full flex items-center justify-between gap-3 p-4 text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-semibold text-white truncate">{part.partName}</h3>
+                      <span className="shrink-0 rounded-full bg-[#8FA88A]/10 px-2 py-0.5 text-xs text-[#8FA88A]">
+                        Token #{unit.tokenId}
+                      </span>
+                    </div>
+                    <p className="text-xs text-white/50 mt-0.5 truncate">{part.brandName}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getSaleStatusStyle(unit.saleStatus)}`}>
+                        {unit.saleStatus}
+                      </span>
+                      <span className="rounded-full border border-[#4A5D48] bg-white/5 px-2 py-0.5 text-[11px] text-white/60">
+                        {unit.partStatus}
+                      </span>
+                      {!unit.isAuthentic && (
+                        <span className="rounded-full border border-red-700/50 bg-red-900/30 px-2 py-0.5 text-[11px] text-red-400">
+                          Recalled
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronDown
+                    size={18}
+                    className={`shrink-0 text-white/40 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
 
-                <p className="text-sm text-white/60 mt-1">{part.brandName}</p>
-
-                {part.description && (
-                  <p className="text-xs text-white/40 mt-2 line-clamp-2">
-                    {part.description}
-                  </p>
-                )}
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-xs font-medium ${getSaleStatusStyle(
-                      part.saleStatus
-                    )}`}
-                  >
-                    {part.saleStatus}
-                  </span>
-                  <span className="rounded-full border border-[#4A5D48] bg-white/5 px-2 py-0.5 text-xs text-white/60">
-                    {part.partStatus}
-                  </span>
-                  {!part.isAuthentic && (
-                    <span className="rounded-full border border-red-700/50 bg-red-900/30 px-2 py-0.5 text-xs text-red-400">
-                      Recalled
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-3 flex items-center justify-between border-t border-[#4A5D48] pt-3">
-                  <span className="text-xs text-white/50">
-                    {part.category}
-                  </span>
-                  <span className="text-sm font-semibold text-[#8FA88A]">
-                    ${part.price}
-                  </span>
-                </div>
-
-+                {part.updatedAt && (
-                  <p className="text-xs text-white/30 mt-2">
-                    Last updated:{" "}
-                    {new Date(part.updatedAt).toLocaleDateString()}
-                  </p>
+                {/* CHANGE: extends downward inline instead of opening a modal */}
+                {isExpanded && (
+                  <div className="border-t border-[#4A5D48] p-4 flex flex-col sm:flex-row gap-4">
+                    <img
+                      src={part.image?.url || part.thumbnail}
+                      alt={part.partName}
+                      className="h-32 w-32 rounded-lg object-cover shrink-0"
+                    />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      {part.description && (
+                        <p className="text-xs text-white/60">{part.description}</p>
+                      )}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/50">{part.category}</span>
+                        <span className="font-semibold text-[#8FA88A]">${part.price}</span>
+                      </div>
+                      <p className="text-xs text-white/40 truncate">Owner: {unit.owner}</p>
+                      <p className="text-xs text-white/40 truncate">Custodian: {unit.custodian}</p>
+                      {unit.transactionHash && (
+                        <p className="text-xs text-white/40 truncate">Tx: {unit.transactionHash}</p>
+                      )}
+                      {unit.updatedAt && (
+                        <p className="text-xs text-white/30">
+                          Last updated: {new Date(unit.updatedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

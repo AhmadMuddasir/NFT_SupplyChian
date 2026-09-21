@@ -45,6 +45,37 @@ export const autopartApi = {
     });
     return response.data;
   },
+  recordMintedUnit: async (partId, data) => {
+    const response = await apiClient.post(
+      `/api/supplyChain/${partId}/units`,
+      data,
+    );
+    return response.data;
+  },
+  getUnitsForPart: async (partId) => {
+    const response = await apiClient.get(`/api/supplyChain/${partId}/units`);
+    return response.data;
+  },
+  getAllUnitsForManufacturer: async (address) => {
+    const response = await apiClient.get(
+      `/api/supplyChain/units?address=${address}`,
+    );
+    return response.data;
+  },
+  getUnitsForRetailer: async (address) => {
+    const response = await apiClient.get(
+      `/api/supplyChain/retailer/units?address=${address}`,
+    );
+    return response.data;
+  },
+  recordMintedUnitsBatch: async (partId, data) => {
+    const response = await apiClient.post(
+      `/api/supplyChain/${partId}/units/batch`,
+      data,
+    );
+    return response.data;
+  },
+
   sync: async (tokenId) => {
     const response = await apiClient.post(`/api/supplyChain/sync/${tokenId}`);
     return response.data;
