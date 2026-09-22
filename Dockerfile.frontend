@@ -1,0 +1,39 @@
+# FILE: Dockerfile.frontend  [EDIT]
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+
+RUN npm install -g pnpm@10.6.5
+ENV npm_config_verify_deps_integrity=false
+
+RUN pnpm install --frozen-lockfile
+
+COPY jsconfig.json ./
+COPY next.config.mjs ./
+COPY postcss.config.mjs ./
+
+COPY src/app ./src/app
+COPY src/components ./src/components
+COPY src/context ./src/context
+COPY src/hooks ./src/hooks
+COPY src/lib ./src/lib
+
+ARG NEXT_PUBLIC_PINATA_API_KEY
+ARG NEXT_PUBLIC_PINATA_SECRET_KEY
+ARG NEXT_PUBLIC_CONTRACT_ADDRESS
+ARG NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+ARG NEXT_PUBLIC_URL
+
+ENV NEXT_PUBLIC_PINATA_API_KEY=$NEXT_PUBLIC_PINATA_API_KEY
+ENV NEXT_PUBLIC_PINATA_SECRET_KEY=$NEXT_PUBLIC_PINATA_SECRET_KEY
+ENV NEXT_PUBLIC_CONTRACT_ADDRESS=$NEXT_PUBLIC_CONTRACT_ADDRESS
+ENV NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=$NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+ENV NEXT_PUBLIC_URL=$NEXT_PUBLIC_URL
+
+RUN pnpm run build
+
+EXPOSE 3000
+
+CMD [ "pnpm","run","start" ]

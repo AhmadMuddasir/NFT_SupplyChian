@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+
+RUN npm install -g pnpm@10.6.5
+ENV npm_config_verify_deps_integrity=false
+
+RUN pnpm install --frozen-lockfile
+
+COPY src/api ./src/api
+
+EXPOSE 5513
+
+CMD [ "pnpm","run","dev:api" ]

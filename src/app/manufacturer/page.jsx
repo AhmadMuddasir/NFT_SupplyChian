@@ -12,6 +12,7 @@ import RequestComponent from "@/components/RequestComponent";
 import AllRetailers from "@/components/AllRetailers";
 import MintedPartsComponent from "@/components/MintedPartsComponent";
 import ManufacturerParts from "@/components/parts/ManufacturerParts";
+import ReturnedParts from "@/components/parts/ReturnedParts";
 
 const Page = () => {
 
@@ -278,6 +279,16 @@ const handleFulfillSupply = async (requestId, uris, hashes, part, retailerAddres
             Minted Parts ({mintedPartsCount})
           </button>
           <button
+            onClick={() => setActiveTab("returned")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "returned"
+                ? "text-[#8FA88A] border-b-2 border-[#8FA88A]"
+                : "text-white/60 hover:text-white"
+            }`}
+          >
+            Returned Parts
+          </button>
+          <button
             onClick={() => setActiveTab("retailers")}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "retailers"
@@ -342,13 +353,19 @@ const handleFulfillSupply = async (requestId, uris, hashes, part, retailerAddres
 
         {activeTab === "minted" && (
           <div className="mt-6">
-            <MintedPartsComponent parts={parts} refreshing={loadingParts} />
+             <MintedPartsComponent refreshing={loadingParts} />
           </div>
         )}
 
         {activeTab === "retailers" && (
           <div>
             <AllRetailers retailerRequests={retailerRequests} />
+          </div>
+        )}
+
+        {activeTab === "returned" && (
+          <div>
+             <ReturnedParts />
           </div>
         )}
       </div>

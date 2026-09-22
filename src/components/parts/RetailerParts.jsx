@@ -15,9 +15,10 @@ const RetailerParts = () => {
   const { contract, getSaleStatus, getNFTCustodian, verifyPartAuthenticity } = useContract();
 
   const [myParts, setMyParts] = useState([]);
+  console.log("myParts", myParts)
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  const [expandedId, setExpandedId] = useState(null); // CHANGE: replaces modal — tracks which card is expanded
+  const [expandedId, setExpandedId] = useState(null); 
 
   const fetchMyParts = async () => {
     if (!contract || !address) return;
@@ -25,13 +26,11 @@ const RetailerParts = () => {
     try {
       setLoading(true);
 
-      // CHANGE: source candidate list from MintedUnit (per-retailer), not from AutoPart templates.
-      // AutoPart no longer carries a single tokenId, so filtering templates by tokenId is wrong now.
+
       const result = await autopartApi.getUnitsForRetailer(address);
       const units = result.data?.units || [];
 
-      // Still verify live on-chain ownership — a unit initially minted to this retailer may have
-      // since been transferred/returned, so DB record alone isn't authoritative for "do I own it now"
+
       const enriched = await Promise.all(
         units.map(async (unit) => {
           try {

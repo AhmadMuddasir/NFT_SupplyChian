@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "next": "next dev",
     "dev:next": "next dev",
     "dev:api": "nodemon src/api/server.js",
     "dev": "concurrently \"npm run dev:next\" \"npm run dev:api\"",
