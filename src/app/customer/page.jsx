@@ -43,17 +43,17 @@ const Page = () => {
     setMetadataStatus(null);
 
     try {
-      const [dbResult, chainData] = await Promise.all([
-        autopartApi.getByTokenId(tokenId).catch(() => null),
-        Promise.all([
+      const [unitResult, authenticity, saleStatus, custodian, phoneNumber] =
+        await Promise.all([
+          autopartApi.getUnitByTokenId(tokenId).catch(() => null),
           verifyPartAuthenticity(tokenId),
           getSaleStatus(tokenId),
           getNFTCustodian(tokenId),
           getCustomerPhoneNumber(tokenId).catch(() => ""),
-        ]),
-      ]);
+        ]);
 
-      const [authenticity, saleStatus, custodian, phoneNumber] = chainData;
+      const unit = unitResult?.data?.unit || null;
+      const dbPart = unit?.autoPart || null;
 
       setResult({
         tokenId: Number(tokenId),
@@ -64,7 +64,8 @@ const Page = () => {
         mintedAt: new Date(Number(authenticity[4]) * 1000).toLocaleString(),
         saleStatus: SALE_STATUS_NAMES[Number(saleStatus)],
         phoneNumber,
-        dbPart: dbResult?.data?.autoPart || null,
+        dbPart,
+        unit,
       });
 
       toast.success("Part verified on-chain!");
@@ -114,9 +115,9 @@ const Page = () => {
       });
 
       if (matches) {
-        toast.success(" Metadata is authentic and untampered!");
+        toast.success("Metadata is authentic and untampered!");
       } else {
-        toast.error(" Metadata has been tampered with!");
+        toast.error("Metadata has been tampered with!");
       }
     } catch (error) {
       console.error("Metadata verification error:", error);
@@ -187,7 +188,6 @@ const Page = () => {
 
         {result && !loading && (
           <div className="mt-10 space-y-4">
-            {/* Authenticity Banner */}
             <div
               className={`rounded-xl border p-5 ${
                 result.isAuthentic
@@ -220,9 +220,7 @@ const Page = () => {
               </div>
             </div>
 
-            {/* Part Details Card */}
             <div className="rounded-xl border border-[#4A5D48] bg-[#243329] overflow-hidden">
-              {/* Image + Header */}
               {result.dbPart?.image?.url && (
                 <img
                   src={result.dbPart.image.url}
@@ -248,7 +246,6 @@ const Page = () => {
                   )}
                 </div>
 
-                {/* Status Grid */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg border border-[#4A5D48] bg-[#1C2620] p-3">
                     <p className="text-xs text-white/50">Part Status</p>
@@ -268,7 +265,6 @@ const Page = () => {
                   </div>
                 </div>
 
-                {/* Details List */}
                 <div className="space-y-3 border-t border-[#4A5D48] pt-4">
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-xs text-white/50">
@@ -308,6 +304,33 @@ const Page = () => {
                     </div>
                   )}
 
+                  {result.unit?.retailerAddress && (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-xs text-white/50">
+                        Sold By Retailer
+                      </span>
+                      <span className="text-xs font-mono text-white/80 truncate text-right">
+                        {result.unit.retailerAddress}
+                      </span>
+                    </div>
+                  )}
+
+                  {result.unit?.transactionHash && (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-xs text-white/50">
+                        Mint Transaction
+                      </span>
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${result.unit.transactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-mono text-[#8FA88A] truncate text-right hover:underline"
+                      >
+                        {result.unit.transactionHash.slice(0, 20)}...
+                      </a>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-xs text-white/50">
                       Metadata Hash
@@ -325,7 +348,7 @@ const Page = () => {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h4 className="text-sm font-semibold text-white">
-                      🔒 Metadata Integrity Check
+                      Metadata Integrity Check
                     </h4>
                     <p className="text-xs text-white/50 mt-1">
                       Verify the IPFS metadata hasn't been tampered with
@@ -356,8 +379,8 @@ const Page = () => {
                       }`}
                     >
                       {metadataStatus.matches
-                        ? " Metadata is authentic and untampered"
-                        : " Metadata has been modified"}
+                        ? "Metadata is authentic and untampered"
+                        : "Metadata has been modified"}
                     </p>
                     <div className="mt-3 space-y-1">
                       <div className="flex justify-between gap-2 text-xs">

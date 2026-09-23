@@ -75,6 +75,10 @@ export const autopartApi = {
     );
     return response.data;
   },
+  getUnitByTokenId:async(tokenId) =>{
+    const response = await apiClient.get(`/api/supplyChain/units/token/${tokenId}`);
+    return response.data;
+  },
 
   sync: async (tokenId) => {
     const response = await apiClient.post(`/api/supplyChain/sync/${tokenId}`);

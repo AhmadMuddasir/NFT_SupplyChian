@@ -20,12 +20,16 @@ export const recordMintedUnit = async (req, res) => {
     const { tokenId, retailerAddress, transactionHash } = req.body;
 
     if (tokenId === undefined || tokenId === null) {
-      return res.status(400).json({ status: "error", message: "tokenId is required" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "tokenId is required" });
     }
 
     const part = await AutoPart.findOne({ _id: id, isActive: true });
     if (!part) {
-      return res.status(404).json({ status: "error", message: "Part not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Part not found" });
     }
 
     if (part.mintedCount >= part.quantity) {
@@ -94,7 +98,7 @@ export const getAllUnitsForManufacturer = async (req, res) => {
 
 export const createautoPart = async (req, res, next) => {
   try {
-    const walletAddress = req.body.walletAddress; 
+    const walletAddress = req.body.walletAddress;
     const { walletAddress: _omit, ...partData } = req.body;
     const autoPart = await AutoPart.create({
       ...req.body,
@@ -317,9 +321,13 @@ export const getUnitsForRetailer = async (req, res) => {
   try {
     const { address } = req.query;
     if (!address) {
-      return res.status(400).json({ status: "error", message: "address is required" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "address is required" });
     }
-    const units = await MintedUnit.find({ retailerAddress: address.toLowerCase() })
+    const units = await MintedUnit.find({
+      retailerAddress: address.toLowerCase(),
+    })
       .populate("autoPart")
       .sort({ createdAt: -1 });
     res.status(200).json({ status: "success", data: { units } });
@@ -328,6 +336,30 @@ export const getUnitsForRetailer = async (req, res) => {
   }
 };
 
+export const getUnitByTokenId = async (req, res) => {
+  try {
+    const unit = await MintedUnit.findOne({
+      tokenId: req.params.tokenId,
+    }).populate("autoPart");
+
+    if (!unit) {
+      return res.status(404).json({
+        status: "error",
+        message: "Unit not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: { unit },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
 
 export const recordMintedUnitsBatch = async (req, res) => {
   try {
@@ -335,12 +367,16 @@ export const recordMintedUnitsBatch = async (req, res) => {
     const { tokenIds, retailerAddress, transactionHash } = req.body;
 
     if (!Array.isArray(tokenIds) || tokenIds.length === 0) {
-      return res.status(400).json({ status: "error", message: "tokenIds array is required" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "tokenIds array is required" });
     }
 
     const part = await AutoPart.findOne({ _id: id, isActive: true });
     if (!part) {
-      return res.status(404).json({ status: "error", message: "Part not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Part not found" });
     }
 
     const remaining = part.quantity - part.mintedCount;

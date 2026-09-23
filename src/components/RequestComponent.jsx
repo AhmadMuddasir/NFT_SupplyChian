@@ -197,7 +197,7 @@ const handleAutoFulfill = async (request) => {
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-white">
-                        Request #{req.requestId} · Qty {req.quantity}
+                        RequestId #{req.requestId} · Qty {req.quantity}
                       </p>
                       <p className="text-xs text-white/40 mt-1 truncate">
                         From: {req.requester}
